@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "FanRoar",
+    "slug": "fanroar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#13141D"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.varskite.fanroar",
+      "infoPlist": {
+        "NSMotionUsageDescription": "FanRoar uses motion to detect your shake support for your team.",
+        "NSMicrophoneUsageDescription": "FanRoar uses the microphone to measure your voice cheer energy."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#13141D"
+      },
+      "package": "com.varskite.fanroar",
+      "permissions": ["RECORD_AUDIO", "VIBRATE"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "FanRoar needs mic access to measure your cheer energy."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "fanroar-mobile"
+      }
+    }
+  }
+}
