@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useUserStore } from '../store/userStore';
+import { mapMatch, BackendMatch } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION ?? 'v1';
@@ -35,9 +36,18 @@ export const api = {
       client.patch('/auth/profile', data),
   },
   matches: {
-    live: () => client.get('/matches/live'),
-    upcoming: () => client.get('/matches/upcoming'),
-    byId: (id: string) => client.get(`/matches/${id}`),
+    live: async () => {
+      const res = await client.get<BackendMatch[]>('/matches/live');
+      return { ...res, data: res.data.map(mapMatch) };
+    },
+    upcoming: async () => {
+      const res = await client.get<BackendMatch[]>('/matches/upcoming');
+      return { ...res, data: res.data.map(mapMatch) };
+    },
+    byId: async (id: string) => {
+      const res = await client.get<BackendMatch>(`/matches/${id}`);
+      return { ...res, data: mapMatch(res.data) };
+    },
   },
   leaderboard: {
     global: (matchId: string, limit = 20) =>

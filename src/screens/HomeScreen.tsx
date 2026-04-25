@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView,
+  View, Text, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { buildTheme } from '../theme';
@@ -10,28 +10,78 @@ import FRCard from '../components/shared/FRCard';
 import FRIcon from '../components/shared/FRIcon';
 import FRLiveDot from '../components/shared/FRLiveDot';
 import { TEAM_COLORS } from '../theme/colors';
+import { api } from '../api/client';
+import { ApiMatch } from '../api/types';
 
-const UPCOMING = [
-  { time: '20:00', a: 'France',  b: 'Spain',   stage: 'QF',  until: '4h' },
-  { time: '23:00', a: 'England', b: 'Germany',  stage: 'QF',  until: '7h' },
-  { time: 'TMRW',  a: 'USA',     b: 'Mexico',   stage: 'R16', until: 'tomorrow' },
-];
+function formatKickoff(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (date.toDateString() === todayStr) {
+    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  if (date.toDateString() === tomorrow.toDateString()) return 'TMRW';
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toUpperCase();
+}
+
+function formatUntil(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return 'NOW';
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 24) return `${hours}h`;
+  return 'TOMORROW';
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { isDark, teamKey, user } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
   const { momentum } = useMatchStore();
-  const [refreshing, setRefreshing] = React.useState(false);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
+  const [upcomingMatches, setUpcomingMatches] = useState<ApiMatch[]>([]);
+  const [matchesLoading, setMatchesLoading] = useState(true);
+
+  const fetchMatches = useCallback(async () => {
+    try {
+      const [liveRes, upcomingRes] = await Promise.all([
+        api.matches.live(),
+        api.matches.upcoming(),
+      ]);
+      setLiveMatches(liveRes.data ?? []);
+      setUpcomingMatches(upcomingRes.data ?? []);
+    } catch {
+      // keep previous data on error
+    } finally {
+      setMatchesLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMatches();
+    }, [fetchMatches])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchMatches();
   };
 
   const displayName = user?.displayName ?? 'Marcus';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning,' : hour < 18 ? 'Good afternoon,' : 'Good evening,';
+
+  const heroMatch = liveMatches[0] ?? null;
+  const heroMomentum = heroMatch?.momentumRatio != null
+    ? Math.round(heroMatch.momentumRatio * 100)
+    : momentum;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -57,14 +107,16 @@ export default function HomeScreen() {
             letterSpacing: 0.5,
             textTransform: 'uppercase',
           }}>
-            WED · APR 25
+            {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <FRLiveDot color={theme.danger} />
-            <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 11, color: theme.danger, letterSpacing: 0.5 }}>
-              2 LIVE
-            </Text>
-          </View>
+          {liveMatches.length > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <FRLiveDot color={theme.danger} />
+              <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 11, color: theme.danger, letterSpacing: 0.5 }}>
+                {liveMatches.length} LIVE
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Greeting */}
@@ -111,84 +163,109 @@ export default function HomeScreen() {
         {/* Live match hero */}
         <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
           <FRCard theme={theme} padding={0} style={{ overflow: 'hidden' }}>
-            {/* Hero placeholder */}
-            <View style={{
-              height: 120,
-              backgroundColor: theme.surface2,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-              <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
-                MATCH HERO · BRA vs ARG
-              </Text>
-            </View>
-
-            <View style={{ padding: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <FRLiveDot color={theme.danger} />
-                <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 10, color: theme.danger, letterSpacing: 0.8 }}>
-                  LIVE · 73'
-                </Text>
-                <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
-                  · QUARTER-FINAL
-                </Text>
+            {matchesLoading ? (
+              <View style={{ height: 200, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator color={theme.accent} />
               </View>
-
-              {/* Scoreline */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: theme.accent }} />
-                  <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 22, color: theme.text }}>Brazil</Text>
-                </View>
-                <Text style={{
-                  fontFamily: 'JetBrainsMono_700Bold',
-                  fontSize: 28,
-                  color: theme.text,
-                  fontVariant: ['tabular-nums'],
-                }}>
-                  2 — 1
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 22, color: theme.text }}>Argentina</Text>
-                  <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: TEAM_COLORS['ARG'] }} />
-                </View>
-              </View>
-
-              {/* Momentum mini-bar */}
-              <View style={{ marginTop: 12, height: 6, borderRadius: 3, backgroundColor: theme.surface2, overflow: 'hidden' }}>
-                <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${momentum}%`, backgroundColor: theme.accent }} />
-                <View style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: `${100 - momentum}%`, backgroundColor: TEAM_COLORS['ARG'] }} />
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
-                  {momentum}% MOMENTUM
-                </Text>
-                <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
-                  {100 - momentum}%
-                </Text>
-              </View>
-
-              {/* Join CTA */}
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Match')}
-                activeOpacity={0.85}
-                style={{
-                  marginTop: 12,
-                  height: 44,
-                  borderRadius: 12,
-                  backgroundColor: theme.accent,
-                  flexDirection: 'row',
-                  alignItems: 'center',
+            ) : heroMatch ? (
+              <>
+                {/* Hero placeholder */}
+                <View style={{
+                  height: 120,
+                  backgroundColor: theme.surface2,
                   justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <FRIcon name="bolt" size={16} color={theme.bg} />
-                <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 14, color: theme.bg }}>
-                  Join the roar
+                  alignItems: 'center',
+                }}>
+                  <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
+                    MATCH HERO · {heroMatch.teamA.code} vs {heroMatch.teamB.code}
+                  </Text>
+                </View>
+
+                <View style={{ padding: 14 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <FRLiveDot color={theme.danger} />
+                    <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 10, color: theme.danger, letterSpacing: 0.8 }}>
+                      LIVE{heroMatch.minute != null ? ` · ${heroMatch.minute}'` : ''}
+                    </Text>
+                    <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
+                      · {heroMatch.stage?.toUpperCase() ?? ''}
+                    </Text>
+                  </View>
+
+                  {/* Scoreline */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <View style={{
+                        width: 24, height: 24, borderRadius: 6,
+                        backgroundColor: TEAM_COLORS[heroMatch.teamA.code] ?? theme.accent,
+                      }} />
+                      <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 22, color: theme.text }}>
+                        {heroMatch.teamA.name}
+                      </Text>
+                    </View>
+                    <Text style={{
+                      fontFamily: 'JetBrainsMono_700Bold',
+                      fontSize: 28,
+                      color: theme.text,
+                      fontVariant: ['tabular-nums'],
+                    }}>
+                      {heroMatch.scores?.teamA ?? 0} — {heroMatch.scores?.teamB ?? 0}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 22, color: theme.text }}>
+                        {heroMatch.teamB.name}
+                      </Text>
+                      <View style={{
+                        width: 24, height: 24, borderRadius: 6,
+                        backgroundColor: TEAM_COLORS[heroMatch.teamB.code] ?? theme.surface2,
+                      }} />
+                    </View>
+                  </View>
+
+                  {/* Momentum mini-bar */}
+                  <View style={{ marginTop: 12, height: 6, borderRadius: 3, backgroundColor: theme.surface2, overflow: 'hidden' }}>
+                    <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${heroMomentum}%`, backgroundColor: TEAM_COLORS[heroMatch.teamA.code] ?? theme.accent }} />
+                    <View style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: `${100 - heroMomentum}%`, backgroundColor: TEAM_COLORS[heroMatch.teamB.code] ?? theme.surface2 }} />
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                    <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
+                      {heroMomentum}% MOMENTUM
+                    </Text>
+                    <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
+                      {100 - heroMomentum}%
+                    </Text>
+                  </View>
+
+                  {/* Join CTA */}
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('Match', { matchId: heroMatch.matchId })}
+                    activeOpacity={0.85}
+                    style={{
+                      marginTop: 12,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor: theme.accent,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <FRIcon name="bolt" size={16} color={theme.bg} />
+                    <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 14, color: theme.bg }}>
+                      Join the roar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <View style={{ height: 120, justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                <FRIcon name="clock" size={20} color={theme.textMute} />
+                <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
+                  NO LIVE MATCHES RIGHT NOW
                 </Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            )}
           </FRCard>
         </View>
 
@@ -212,45 +289,62 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20, paddingTop: 4, gap: 8 }}>
-          {UPCOMING.map((m, i) => (
-            <View key={i} style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              padding: 12,
-              paddingHorizontal: 14,
-              borderRadius: 14,
-              backgroundColor: theme.surface,
-              borderWidth: 0.5,
-              borderColor: theme.border,
+          {matchesLoading ? (
+            <ActivityIndicator color={theme.accent} style={{ marginTop: 12 }} />
+          ) : upcomingMatches.length === 0 ? (
+            <Text style={{
+              fontFamily: 'JetBrainsMono_400Regular',
+              fontSize: 11,
+              color: theme.textMute,
+              letterSpacing: 0.5,
+              paddingVertical: 12,
             }}>
-              <Text style={{
-                fontFamily: 'JetBrainsMono_700Bold',
-                fontSize: 11,
-                color: theme.text,
-                letterSpacing: 0.4,
-                width: 60,
-              }}>{m.time}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: 'InterTight_600SemiBold', fontSize: 14, color: theme.text }}>
-                  {m.a} · {m.b}
-                </Text>
-                <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.4, marginTop: 2 }}>
-                  {m.stage} · IN {m.until.toUpperCase()}
-                </Text>
-              </View>
-              <View style={{
-                width: 30,
-                height: 30,
-                borderRadius: 10,
-                backgroundColor: theme.surface2,
+              No upcoming matches scheduled.
+            </Text>
+          ) : (
+            upcomingMatches.map((m) => (
+              <View key={m.matchId} style={{
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: 10,
+                padding: 12,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                backgroundColor: theme.surface,
+                borderWidth: 0.5,
+                borderColor: theme.border,
               }}>
-                <FRIcon name="plus" size={14} color={theme.text} />
+                <Text style={{
+                  fontFamily: 'JetBrainsMono_700Bold',
+                  fontSize: 11,
+                  color: theme.text,
+                  letterSpacing: 0.4,
+                  width: 60,
+                }}>{m.kickoffTime ? formatKickoff(m.kickoffTime) : '—'}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: 'InterTight_600SemiBold', fontSize: 14, color: theme.text }}>
+                    {m.teamA.name} · {m.teamB.name}
+                  </Text>
+                  <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.4, marginTop: 2 }}>
+                    {m.stage?.toUpperCase() ?? ''}{m.kickoffTime ? ` · IN ${formatUntil(m.kickoffTime)}` : ''}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Match', { matchId: m.matchId })}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 10,
+                    backgroundColor: theme.surface2,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <FRIcon name="plus" size={14} color={theme.text} />
+                </TouchableOpacity>
               </View>
-            </View>
-          ))}
+            ))
+          )}
         </View>
 
         {/* Your impact */}

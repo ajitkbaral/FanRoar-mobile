@@ -1,6 +1,6 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, SafeAreaView } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
 import { useMatchStore } from '../store/matchStore';
@@ -16,23 +16,60 @@ import FRLiveDot from '../components/shared/FRLiveDot';
 import FRIcon from '../components/shared/FRIcon';
 import { PowerUpType, FanRole } from '../utils/constants';
 import { TEAM_COLORS } from '../theme/colors';
+import { api } from '../api/client';
+import { MainTabParamList } from '../navigation';
 
 interface Burst { id: string; x: number; y: number; }
 interface Floater { id: string; gain: number; x: number; }
 
-const MATCH_ID = 'wc2026-bra-arg-qf'; // TODO: from navigation params
+function matchStatusLabel(status: string, minute?: number): string {
+  if (status !== 'live') return status.toUpperCase();
+  const half = (minute ?? 0) > 45 ? '2ND HALF' : '1ST HALF';
+  return minute != null ? `LIVE · ${half} · ${minute}'` : `LIVE · ${half}`;
+}
 
 export default function MatchScreen() {
+  const route = useRoute<RouteProp<MainTabParamList, 'Match'>>();
+  const matchId = route.params?.matchId ?? null;
+
   const { isDark, teamKey, fanRole } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
-  const { scoreA, scoreB, momentum, eventMode, setMomentum } = useMatchStore();
+  const {
+    match, scoreA, scoreB, momentum, eventMode,
+    setMatch, setScores, setMomentum,
+    supportingTeamId, setSupportingTeamId,
+  } = useMatchStore();
   const { myEnergy, combo, activePowerup, activatePowerup } = useEnergyStore();
 
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [floaters, setFloaters] = useState<Floater[]>([]);
   const [holdProgress, setHoldProgress] = useState(0);
+  const [matchLoading, setMatchLoading] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
-  const { emitEnergy: socketEmit } = useMatchSocket(MATCH_ID);
+  useEffect(() => {
+    if (!matchId) return;
+    setMatchLoading(true);
+    api.matches.byId(matchId)
+      .then((res) => {
+        const m = res.data;
+        setMatch({
+          id: m.matchId,
+          teamA: m.teamA,
+          teamB: m.teamB,
+          status: m.status,
+          minute: m.minute,
+          stage: m.stage,
+        });
+        if (m.scores) setScores(m.scores.teamA, m.scores.teamB);
+        if (m.momentumRatio != null) setMomentum(Math.round(m.momentumRatio * 100));
+        if (!supportingTeamId) setPickerVisible(true);
+      })
+      .catch(() => {})
+      .finally(() => setMatchLoading(false));
+  }, [matchId]);
+
+  const { emitEnergy: socketEmit } = useMatchSocket(matchId, supportingTeamId);
 
   const { emitEnergy, getMultiplierDisplay } = useEnergyEngine({
     role: fanRole as FanRole,
@@ -43,26 +80,24 @@ export default function MatchScreen() {
 
   useShakeDetector({
     onShake: () => handleInput('shake'),
-    enabled: true,
+    enabled: !!supportingTeamId,
   });
 
   const handleInput = useCallback((kind: 'tap' | 'shake' | 'voice' | 'charge', raw = 1) => {
+    if (!supportingTeamId) return;
     const gain = emitEnergy(kind, raw) ?? 1;
-
-    // Optimistic momentum shift
-    setMomentum(m => Math.max(0, Math.min(100, m + gain * 0.05)));
-
-    // Visual feedback
+    // teamA owns the left (high momentum); teamB owns the right (low momentum)
+    const direction = supportingTeamId === match?.teamB.code ? -1 : 1;
+    setMomentum((m) => Math.max(0, Math.min(100, m + direction * gain * 0.05)));
     const id = Math.random().toString(36).slice(2);
     setBursts(b => [...b, { id, x: 0, y: 0 }]);
     setFloaters(f => [...f, { id, gain, x: 30 + Math.random() * 40 }]);
     setTimeout(() => setBursts(b => b.filter(x => x.id !== id)), 700);
     setTimeout(() => setFloaters(f => f.filter(x => x.id !== id)), 900);
-  }, [emitEnergy, setMomentum]);
+  }, [emitEnergy, setMomentum, supportingTeamId]);
 
   const handleHoldRelease = useCallback((progress: number) => {
-    const raw = Math.round(5 + progress * 0.1);
-    handleInput('charge', raw);
+    handleInput('charge', Math.round(5 + progress * 0.1));
   }, [handleInput]);
 
   const handlePowerup = useCallback((type: PowerUpType) => {
@@ -72,24 +107,51 @@ export default function MatchScreen() {
 
   const totalMult = getMultiplierDisplay(fanRole === 'drummer' ? 'tap' : fanRole === 'chanter' ? 'voice' : 'shake');
 
-  const teamA = { code: theme.teamCode, color: theme.accent, name: theme.teamName };
-  const teamB = { code: 'ARG', color: TEAM_COLORS['ARG'], name: 'Argentina' };
+  const teamACode  = match?.teamA.code  ?? theme.teamCode;
+  const teamAName  = match?.teamA.name  ?? theme.teamName;
+  const teamAColor = TEAM_COLORS[teamACode] ?? theme.accent;
+  const teamA = { code: teamACode, color: teamAColor, name: teamAName };
+
+  const teamBCode  = match?.teamB.code  ?? 'OPP';
+  const teamBName  = match?.teamB.name  ?? 'Opponent';
+  const teamBColor = TEAM_COLORS[teamBCode] ?? theme.surface2;
+  const teamB = { code: teamBCode, color: teamBColor, name: teamBName };
+
+  const stageLabel  = match?.stage?.toUpperCase() ?? '—';
+  const statusLabel = matchStatusLabel(match?.status ?? 'live', match?.minute);
+
+  const supportingTeam = supportingTeamId === match?.teamA.code ? teamA
+    : supportingTeamId === match?.teamB.code ? teamB
+    : null;
+
+  // Force-show the picker if a match is loaded but no team has been chosen yet.
+  const showTeamPicker = !!match && !matchLoading && (pickerVisible || !supportingTeamId);
 
   const eventConfig = useMemo(() => ({
     goal:     { label: 'GOAL · DOUBLE ENERGY · 30s', color: theme.accent,   icon: 'bolt' },
-    clutch:   { label: 'CLUTCH MODE · LAST 5 MIN',    color: theme.danger,   icon: 'fire' },
+    clutch:   { label: 'CLUTCH MODE · LAST 5 MIN',   color: theme.danger,   icon: 'fire' },
     halftime: { label: 'HALF-TIME · MINI-GAMES OPEN', color: theme.warning,  icon: 'sparkle' },
   }), [theme]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      {matchLoading && (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          alignItems: 'center', justifyContent: 'center', zIndex: 10,
+          backgroundColor: theme.bg + 'CC',
+        }}>
+          <ActivityIndicator color={theme.accent} size="large" />
+        </View>
+      )}
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
       >
-        {/* Top row — minute + stage */}
+        {/* Top row — status + stage */}
         <View style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
@@ -99,13 +161,13 @@ export default function MatchScreen() {
           paddingBottom: 0,
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <FRLiveDot color="#ff3b30" />
+            {match?.status === 'live' && <FRLiveDot color="#ff3b30" />}
             <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: theme.textMute, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-              LIVE · 2ND HALF · 73'
+              {statusLabel}
             </Text>
           </View>
           <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: theme.textMute, letterSpacing: 0.5 }}>
-            FIFA WC · QF
+            {stageLabel}
           </Text>
         </View>
 
@@ -117,12 +179,33 @@ export default function MatchScreen() {
           paddingHorizontal: 20,
           paddingVertical: 14,
         }}>
-          <ScoreSide theme={theme} team={teamA} score={scoreA || 2} side="L" />
+          <ScoreSide theme={theme} team={teamA} score={scoreA} side="L" active={supportingTeamId === match?.teamA.code} />
           <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 1, flex: 0 }}>
             VS
           </Text>
-          <ScoreSide theme={theme} team={teamB} score={scoreB || 1} side="R" />
+          <ScoreSide theme={theme} team={teamB} score={scoreB} side="R" active={supportingTeamId === match?.teamB.code} />
         </View>
+
+        {/* Supporting team badge */}
+        {supportingTeam && (
+          <View style={{
+            marginHorizontal: 20,
+            marginBottom: 4,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: supportingTeam.color }} />
+            <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
+              YOU'RE ROOTING FOR {supportingTeam.code}
+            </Text>
+            <TouchableOpacity onPress={() => setPickerVisible(true)}>
+              <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5 }}>
+                · CHANGE
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Tug-of-war */}
         <TugOfWarBar
@@ -156,7 +239,7 @@ export default function MatchScreen() {
         {/* Energy + multiplier meters */}
         <EnergyMeter
           theme={theme}
-          energy={myEnergy || 2417}
+          energy={myEnergy || 0}
           multiplier={totalMult}
           role={fanRole}
           eventMode={eventMode}
@@ -170,15 +253,31 @@ export default function MatchScreen() {
           onActivate={handlePowerup}
         />
       </ScrollView>
+
+      {/* Team picker overlay — blocks interaction until a team is chosen */}
+      {showTeamPicker && (
+        <TeamPicker
+          theme={theme}
+          teamA={teamA}
+          teamAId={match!.teamA.code}
+          teamB={teamB}
+          teamBId={match!.teamB.code}
+          currentId={supportingTeamId}
+          onSelect={(id) => { setSupportingTeamId(id); setPickerVisible(false); }}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
-function ScoreSide({ theme, team, score, side }: {
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function ScoreSide({ theme, team, score, side, active }: {
   theme: ReturnType<typeof buildTheme>;
   team: { code: string; color: string; name: string };
   score: number;
   side: 'L' | 'R';
+  active: boolean;
 }) {
   return (
     <View style={{
@@ -194,8 +293,9 @@ function ScoreSide({ theme, team, score, side }: {
         backgroundColor: team.color,
         shadowColor: team.color,
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
+        shadowOpacity: active ? 0.7 : 0.3,
+        shadowRadius: active ? 16 : 8,
+        opacity: active ? 1 : 0.7,
       }} />
       <View style={{ alignItems: side === 'L' ? 'flex-start' : 'flex-end' }}>
         <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5, textTransform: 'uppercase' }}>
@@ -204,12 +304,115 @@ function ScoreSide({ theme, team, score, side }: {
         <Text style={{
           fontFamily: 'InterTight_700Bold',
           fontSize: 36,
-          color: theme.text,
+          color: active ? theme.text : theme.textDim,
           lineHeight: 40,
           fontVariant: ['tabular-nums'],
         }}>
           {score}
         </Text>
+      </View>
+    </View>
+  );
+}
+
+function TeamPicker({ theme, teamA, teamAId, teamB, teamBId, currentId, onSelect }: {
+  theme: ReturnType<typeof buildTheme>;
+  teamA: { code: string; color: string; name: string };
+  teamAId: string;
+  teamB: { code: string; color: string; name: string };
+  teamBId: string;
+  currentId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const isChanging = !!currentId;
+
+  return (
+    <View style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: theme.bg + 'F0',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+    }}>
+      <Text style={{
+        fontFamily: 'JetBrainsMono_400Regular',
+        fontSize: 10,
+        color: theme.textMute,
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
+        marginBottom: 8,
+      }}>
+        {isChanging ? 'Switch your allegiance' : 'Who are you rooting for?'}
+      </Text>
+      <Text style={{
+        fontFamily: 'InterTight_700Bold',
+        fontSize: 28,
+        color: theme.text,
+        letterSpacing: -0.8,
+        marginBottom: 28,
+      }}>
+        {isChanging ? 'Change team' : 'Pick your team'}
+      </Text>
+
+      <View style={{ width: '100%', gap: 12 }}>
+        {[
+          { id: teamAId, team: teamA },
+          { id: teamBId, team: teamB },
+        ].map(({ id, team }) => {
+          const selected = id === currentId;
+          return (
+            <TouchableOpacity
+              key={id}
+              onPress={() => onSelect(id)}
+              activeOpacity={0.85}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 16,
+                padding: 18,
+                borderRadius: 18,
+                backgroundColor: selected ? team.color + '28' : team.color + '14',
+                borderWidth: 1.5,
+                borderColor: selected ? team.color + 'CC' : team.color + '50',
+              }}
+            >
+              <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: team.color,
+                shadowColor: team.color,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: selected ? 0.7 : 0.4,
+                shadowRadius: selected ? 18 : 10,
+              }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontFamily: 'InterTight_700Bold',
+                  fontSize: 20,
+                  color: theme.text,
+                  letterSpacing: -0.4,
+                }}>
+                  {team.name}
+                </Text>
+                <Text style={{
+                  fontFamily: 'JetBrainsMono_400Regular',
+                  fontSize: 10,
+                  color: selected ? team.color : theme.textMute,
+                  letterSpacing: 0.5,
+                  marginTop: 2,
+                }}>
+                  {selected ? 'CURRENTLY SELECTED' : team.code}
+                </Text>
+              </View>
+              <FRIcon
+                name={selected ? 'check' : 'chevron-right'}
+                size={18}
+                color={selected ? team.color : theme.textMute}
+              />
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );

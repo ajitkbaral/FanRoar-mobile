@@ -4,7 +4,7 @@ import { getSocket } from '../api/socket';
 import { useMatchStore } from '../store/matchStore';
 import { useUserStore } from '../store/userStore';
 
-export function useMatchSocket(matchId: string | null) {
+export function useMatchSocket(matchId: string | null, teamId: string | null = null) {
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
   const { setScores, setMomentum, setEventMode, addMatchEvent } = useMatchStore();
@@ -79,7 +79,7 @@ export function useMatchSocket(matchId: string | null) {
     if (!matchId) return;
     socketRef.current.emit('energy_batch', {
       matchId,
-      teamId: useUserStore.getState().teamId,
+      teamId,
       amount,
       inputType,
       timestamp: Date.now(),
