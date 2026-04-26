@@ -7,8 +7,8 @@ import {
   RefreshControl,
   SafeAreaView,
   ActivityIndicator,
+  Image,
 } from "react-native";
-import { SvgUri } from "react-native-svg";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { buildTheme } from "../theme";
 import { useUserStore } from "../store/userStore";
@@ -105,7 +105,6 @@ export default function HomeScreen() {
       : hour < 18
         ? "Good afternoon,"
         : "Good evening,";
-
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -235,13 +234,26 @@ export default function HomeScreen() {
         <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 10 }}>
           {matchesLoading ? (
             <FRCard theme={theme} padding={0} style={{ overflow: "hidden" }}>
-              <View style={{ height: 200, justifyContent: "center", alignItems: "center" }}>
+              <View
+                style={{
+                  height: 200,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <ActivityIndicator color={theme.accent} />
               </View>
             </FRCard>
           ) : liveMatches.length === 0 ? (
             <FRCard theme={theme} padding={0} style={{ overflow: "hidden" }}>
-              <View style={{ height: 120, justifyContent: "center", alignItems: "center", gap: 6 }}>
+              <View
+                style={{
+                  height: 120,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
                 <FRIcon name="clock" size={20} color={theme.textMute} />
                 <Text
                   style={{
@@ -258,9 +270,16 @@ export default function HomeScreen() {
           ) : (
             liveMatches.map((m) => {
               const matchMomentum =
-                m.momentumRatio != null ? Math.round(m.momentumRatio * 100) : 50;
+                m.momentumRatio != null
+                  ? Math.round(m.momentumRatio * 100)
+                  : 50;
               return (
-                <FRCard key={m.matchId} theme={theme} padding={0} style={{ overflow: "hidden" }}>
+                <FRCard
+                  key={m.matchId}
+                  theme={theme}
+                  padding={0}
+                  style={{ overflow: "hidden" }}
+                >
                   <View style={{ padding: 14 }}>
                     <View
                       style={{
@@ -301,10 +320,18 @@ export default function HomeScreen() {
                         alignItems: "center",
                       }}
                     >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <View style={{ width: 24, height: 24, borderRadius: 6, overflow: "hidden" }}>
-                          <SvgUri uri={m.teamA.flagUrl ?? null} width={24} height={24} />
-                        </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        <Image
+                          source={{ uri: m.teamA.flagUrl ?? "" }}
+                          style={{ width: 24, height: 24, borderRadius: 6 }}
+                          resizeMode="cover"
+                        />
                         <Text
                           style={{
                             fontFamily: "InterTight_700Bold",
@@ -325,7 +352,13 @@ export default function HomeScreen() {
                       >
                         {m.scores?.teamA ?? 0} — {m.scores?.teamB ?? 0}
                       </Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
                         <Text
                           style={{
                             fontFamily: "InterTight_700Bold",
@@ -335,9 +368,11 @@ export default function HomeScreen() {
                         >
                           {m.teamB.name}
                         </Text>
-                        <View style={{ width: 24, height: 24, borderRadius: 6, overflow: "hidden" }}>
-                          <SvgUri uri={m.teamB.flagUrl ?? null} width={24} height={24} />
-                        </View>
+                        <Image
+                          source={{ uri: m.teamB.flagUrl ?? "" }}
+                          style={{ width: 24, height: 24, borderRadius: 6 }}
+                          resizeMode="cover"
+                        />
                       </View>
                     </View>
 
@@ -358,7 +393,8 @@ export default function HomeScreen() {
                           bottom: 0,
                           left: 0,
                           width: `${matchMomentum}%`,
-                          backgroundColor: TEAM_COLORS[m.teamA.code] ?? theme.accent,
+                          backgroundColor:
+                            TEAM_COLORS[m.teamA.code] ?? theme.accent,
                         }}
                       />
                       <View
@@ -368,7 +404,8 @@ export default function HomeScreen() {
                           bottom: 0,
                           right: 0,
                           width: `${100 - matchMomentum}%`,
-                          backgroundColor: TEAM_COLORS[m.teamB.code] ?? theme.surface2,
+                          backgroundColor:
+                            TEAM_COLORS[m.teamB.code] ?? theme.surface2,
                         }}
                       />
                     </View>
@@ -403,7 +440,9 @@ export default function HomeScreen() {
 
                     {/* Join CTA */}
                     <TouchableOpacity
-                      onPress={() => navigation.navigate("Match", { matchId: m.matchId })}
+                      onPress={() =>
+                        navigation.navigate("Match", { matchId: m.matchId })
+                      }
                       activeOpacity={0.85}
                       style={{
                         marginTop: 12,
@@ -418,7 +457,11 @@ export default function HomeScreen() {
                     >
                       <FRIcon name="bolt" size={16} color={theme.bg} />
                       <Text
-                        style={{ fontFamily: "InterTight_700Bold", fontSize: 14, color: theme.bg }}
+                        style={{
+                          fontFamily: "InterTight_700Bold",
+                          fontSize: 14,
+                          color: theme.bg,
+                        }}
                       >
                         Join the roar
                       </Text>
@@ -597,9 +640,7 @@ export default function HomeScreen() {
                 color: theme.text,
               }}
             >
-              {totalEnergy != null
-                ? totalEnergy.toLocaleString()
-                : "—"}
+              {totalEnergy != null ? totalEnergy.toLocaleString() : "—"}
             </Text>
             <Text
               style={{

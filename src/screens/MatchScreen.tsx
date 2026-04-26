@@ -6,8 +6,8 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from "react-native";
-import { SvgUri } from "react-native-svg";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { buildTheme } from "../theme";
 import { useUserStore } from "../store/userStore";
@@ -431,18 +431,21 @@ function ScoreSide({
         style={{
           width: 36,
           height: 36,
-          borderRadius: 8,
-          backgroundColor: team.flagUrl ? theme.surface2 : team.color,
           shadowColor: team.color,
           shadowOffset: { width: 0, height: 0 },
           shadowOpacity: active ? 0.7 : 0.3,
           shadowRadius: active ? 16 : 8,
           opacity: active ? 1 : 0.7,
-          overflow: "hidden",
         }}
       >
-        {team.flagUrl && (
-          <SvgUri uri={team.flagUrl} width="100%" height="100%" />
+        {team.flagUrl ? (
+          <Image
+            source={{ uri: team.flagUrl }}
+            style={{ width: 36, height: 36, borderRadius: 8 }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: team.color }} />
         )}
       </View>
       <View style={{ alignItems: "flex-start" }}>
@@ -556,17 +559,20 @@ function TeamPicker({
                 style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 12,
-                  backgroundColor: team.flagUrl ? theme.surface2 : team.color,
                   shadowColor: team.color,
                   shadowOffset: { width: 0, height: 0 },
                   shadowOpacity: selected ? 0.7 : 0,
                   shadowRadius: selected ? 16 : 0,
-                  overflow: "hidden",
                 }}
               >
-                {team.flagUrl && (
-                  <SvgUri uri={team.flagUrl} width="100%" height="100%" />
+                {team.flagUrl ? (
+                  <Image
+                    source={{ uri: team.flagUrl }}
+                    style={{ width: 44, height: 44, borderRadius: 12 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: team.color }} />
                 )}
               </View>
               <View style={{ flex: 1 }}>

@@ -1048,8 +1048,13 @@ export default function OnboardingScreen({ navigation }: Props) {
         countryCode: me.countryCode ?? country.code,
         cityCode:    me.cityCode ?? '',
       });
-      if (me.displayName) setDisplayNameLocal(me.displayName);
-      setStep(3);
+      if (me.fanRole && me.fanRole !== 'CASUAL') {
+        setDisplayNameLocal(me.displayName);
+        setOnboarded();
+        navigation.replace('Main');
+      } else {
+        setStep(3);
+      }
     } catch (e: any) {
       setError(e.response?.data?.message ?? 'Invalid code. Please try again.');
     } finally {
