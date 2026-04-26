@@ -21,22 +21,22 @@ import FRLiveDot from "../components/shared/FRLiveDot";
 import { api } from "../api/client";
 import { ApiLeaderboardEntry } from "../api/types";
 
-type Tab = "country" | "city" | "friends";
+type Tab = "global" | "country" | "friends";
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: "global", label: "Global" },
   { key: "country", label: "Country" },
-  { key: "city", label: "City" },
   { key: "friends", label: "Friends" },
 ];
 
 const EMPTY_ROWS: Record<Tab, ApiLeaderboardEntry[]> = {
+  global: [],
   country: [],
-  city: [],
   friends: [],
 };
 const EMPTY_YOU: Record<Tab, ApiLeaderboardEntry | null> = {
+  global: null,
   country: null,
-  city: null,
   friends: null,
 };
 
@@ -45,7 +45,7 @@ export default function LeaderboardScreen() {
   const { match } = useMatchStore();
   const theme = buildTheme(isDark, teamKey);
 
-  const [activeTab, setActiveTab] = useState<Tab>("country");
+  const [activeTab, setActiveTab] = useState<Tab>("global");
   const [rows, setRows] =
     useState<Record<Tab, ApiLeaderboardEntry[]>>(EMPTY_ROWS);
   const [you, setYou] =
@@ -82,13 +82,13 @@ export default function LeaderboardScreen() {
         }
 
         let res;
-        if (tab === "country") {
+        if (tab === "global") {
+          res = await api.leaderboard.global(matchId);
+        } else if (tab === "country") {
           res = await api.leaderboard.country(
             matchId,
             user?.countryCode ?? "BRA",
           );
-        } else if (tab === "city") {
-          res = await api.leaderboard.city(matchId, user?.cityCode ?? "");
         } else {
           res = await api.leaderboard.friends(matchId);
         }
@@ -103,12 +103,12 @@ export default function LeaderboardScreen() {
         setLoading(false);
       }
     },
-    [match?.id, user?.countryCode, user?.cityCode],
+    [match?.id, user?.countryCode],
   );
 
   useFocusEffect(
     useCallback(() => {
-      fetchTab("country");
+      fetchTab("global");
     }, [fetchTab]),
   );
 
