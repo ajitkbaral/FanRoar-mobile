@@ -12,7 +12,6 @@ import { SvgUri } from "react-native-svg";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { buildTheme } from "../theme";
 import { useUserStore } from "../store/userStore";
-import { useMatchStore } from "../store/matchStore";
 import FRCard from "../components/shared/FRCard";
 import FRIcon from "../components/shared/FRIcon";
 import FRLiveDot from "../components/shared/FRLiveDot";
@@ -53,7 +52,6 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { isDark, teamKey, user } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
-  const { momentum } = useMatchStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
@@ -96,11 +94,6 @@ export default function HomeScreen() {
         ? "Good afternoon,"
         : "Good evening,";
 
-  const heroMatch = liveMatches[0] ?? null;
-  const heroMomentum =
-    heroMatch?.momentumRatio != null
-      ? Math.round(heroMatch.momentumRatio * 100)
-      : momentum;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -226,264 +219,17 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Live match hero */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
-          <FRCard theme={theme} padding={0} style={{ overflow: "hidden" }}>
-            {matchesLoading ? (
-              <View
-                style={{
-                  height: 200,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
+        {/* Live matches */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 10 }}>
+          {matchesLoading ? (
+            <FRCard theme={theme} padding={0} style={{ overflow: "hidden" }}>
+              <View style={{ height: 200, justifyContent: "center", alignItems: "center" }}>
                 <ActivityIndicator color={theme.accent} />
               </View>
-            ) : heroMatch ? (
-              <>
-                {/* Hero placeholder */}
-                <View
-                  style={{
-                    height: 120,
-                    backgroundColor: theme.surface2,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "JetBrainsMono_400Regular",
-                      fontSize: 10,
-                      color: theme.textMute,
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    MATCH HERO · {heroMatch.teamA.code} vs{" "}
-                    {heroMatch.teamB.code}
-                  </Text>
-                </View>
-
-                <View style={{ padding: 14 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 6,
-                      marginBottom: 6,
-                    }}
-                  >
-                    <FRLiveDot color={theme.danger} />
-                    <Text
-                      style={{
-                        fontFamily: "JetBrainsMono_700Bold",
-                        fontSize: 10,
-                        color: theme.danger,
-                        letterSpacing: 0.8,
-                      }}
-                    >
-                      LIVE
-                      {heroMatch.minute != null
-                        ? ` · ${heroMatch.minute}'`
-                        : ""}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "JetBrainsMono_400Regular",
-                        fontSize: 10,
-                        color: theme.textMute,
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      · {heroMatch.stage?.toUpperCase() ?? ""}
-                    </Text>
-                  </View>
-
-                  {/* Scoreline */}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 6,
-                          overflow: "hidden",
-                        }}
-                      >
-                        <SvgUri
-                          uri={heroMatch.teamA.flagUrl ?? null}
-                          width={24}
-                          height={24}
-                        />
-                      </View>
-                      <Text
-                        style={{
-                          fontFamily: "InterTight_700Bold",
-                          fontSize: 22,
-                          color: theme.text,
-                        }}
-                      >
-                        {heroMatch.teamA.name}
-                      </Text>
-                    </View>
-                    <Text
-                      style={{
-                        fontFamily: "JetBrainsMono_700Bold",
-                        fontSize: 28,
-                        color: theme.text,
-                        fontVariant: ["tabular-nums"],
-                      }}
-                    >
-                      {heroMatch.scores?.teamA ?? 0} —{" "}
-                      {heroMatch.scores?.teamB ?? 0}
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "InterTight_700Bold",
-                          fontSize: 22,
-                          color: theme.text,
-                        }}
-                      >
-                        {heroMatch.teamB.name}
-                      </Text>
-                      <View
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 6,
-                          overflow: "hidden",
-                        }}
-                      >
-                        <SvgUri
-                          uri={heroMatch.teamB.flagUrl ?? null}
-                          width={24}
-                          height={24}
-                        />
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Momentum mini-bar */}
-                  <View
-                    style={{
-                      marginTop: 12,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: theme.surface2,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        width: `${heroMomentum}%`,
-                        backgroundColor:
-                          TEAM_COLORS[heroMatch.teamA.code] ?? theme.accent,
-                      }}
-                    />
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        bottom: 0,
-                        right: 0,
-                        width: `${100 - heroMomentum}%`,
-                        backgroundColor:
-                          TEAM_COLORS[heroMatch.teamB.code] ?? theme.surface2,
-                      }}
-                    />
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      marginTop: 6,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "JetBrainsMono_400Regular",
-                        fontSize: 10,
-                        color: theme.textMute,
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      {heroMomentum}% MOMENTUM
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "JetBrainsMono_400Regular",
-                        fontSize: 10,
-                        color: theme.textMute,
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      {100 - heroMomentum}%
-                    </Text>
-                  </View>
-
-                  {/* Join CTA */}
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("Match", {
-                        matchId: heroMatch.matchId,
-                      })
-                    }
-                    activeOpacity={0.85}
-                    style={{
-                      marginTop: 12,
-                      height: 44,
-                      borderRadius: 12,
-                      backgroundColor: theme.accent,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                    }}
-                  >
-                    <FRIcon name="bolt" size={16} color={theme.bg} />
-                    <Text
-                      style={{
-                        fontFamily: "InterTight_700Bold",
-                        fontSize: 14,
-                        color: theme.bg,
-                      }}
-                    >
-                      Join the roar
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <View
-                style={{
-                  height: 120,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
+            </FRCard>
+          ) : liveMatches.length === 0 ? (
+            <FRCard theme={theme} padding={0} style={{ overflow: "hidden" }}>
+              <View style={{ height: 120, justifyContent: "center", alignItems: "center", gap: 6 }}>
                 <FRIcon name="clock" size={20} color={theme.textMute} />
                 <Text
                   style={{
@@ -496,8 +242,180 @@ export default function HomeScreen() {
                   NO LIVE MATCHES RIGHT NOW
                 </Text>
               </View>
-            )}
-          </FRCard>
+            </FRCard>
+          ) : (
+            liveMatches.map((m) => {
+              const matchMomentum =
+                m.momentumRatio != null ? Math.round(m.momentumRatio * 100) : 50;
+              return (
+                <FRCard key={m.matchId} theme={theme} padding={0} style={{ overflow: "hidden" }}>
+                  <View style={{ padding: 14 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        marginBottom: 6,
+                      }}
+                    >
+                      <FRLiveDot color={theme.danger} />
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_700Bold",
+                          fontSize: 10,
+                          color: theme.danger,
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        LIVE{m.minute != null ? ` · ${m.minute}'` : ""}
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_400Regular",
+                          fontSize: 10,
+                          color: theme.textMute,
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        · {m.stage?.toUpperCase() ?? ""}
+                      </Text>
+                    </View>
+
+                    {/* Scoreline */}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <View style={{ width: 24, height: 24, borderRadius: 6, overflow: "hidden" }}>
+                          <SvgUri uri={m.teamA.flagUrl ?? null} width={24} height={24} />
+                        </View>
+                        <Text
+                          style={{
+                            fontFamily: "InterTight_700Bold",
+                            fontSize: 22,
+                            color: theme.text,
+                          }}
+                        >
+                          {m.teamA.name}
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_700Bold",
+                          fontSize: 28,
+                          color: theme.text,
+                          fontVariant: ["tabular-nums"],
+                        }}
+                      >
+                        {m.scores?.teamA ?? 0} — {m.scores?.teamB ?? 0}
+                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <Text
+                          style={{
+                            fontFamily: "InterTight_700Bold",
+                            fontSize: 22,
+                            color: theme.text,
+                          }}
+                        >
+                          {m.teamB.name}
+                        </Text>
+                        <View style={{ width: 24, height: 24, borderRadius: 6, overflow: "hidden" }}>
+                          <SvgUri uri={m.teamB.flagUrl ?? null} width={24} height={24} />
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Momentum mini-bar */}
+                    <View
+                      style={{
+                        marginTop: 12,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: theme.surface2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <View
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          bottom: 0,
+                          left: 0,
+                          width: `${matchMomentum}%`,
+                          backgroundColor: TEAM_COLORS[m.teamA.code] ?? theme.accent,
+                        }}
+                      />
+                      <View
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          bottom: 0,
+                          right: 0,
+                          width: `${100 - matchMomentum}%`,
+                          backgroundColor: TEAM_COLORS[m.teamB.code] ?? theme.surface2,
+                        }}
+                      />
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        marginTop: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_400Regular",
+                          fontSize: 10,
+                          color: theme.textMute,
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        {matchMomentum}% MOMENTUM
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_400Regular",
+                          fontSize: 10,
+                          color: theme.textMute,
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        {100 - matchMomentum}%
+                      </Text>
+                    </View>
+
+                    {/* Join CTA */}
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate("Match", { matchId: m.matchId })}
+                      activeOpacity={0.85}
+                      style={{
+                        marginTop: 12,
+                        height: 44,
+                        borderRadius: 12,
+                        backgroundColor: theme.accent,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <FRIcon name="bolt" size={16} color={theme.bg} />
+                      <Text
+                        style={{ fontFamily: "InterTight_700Bold", fontSize: 14, color: theme.bg }}
+                      >
+                        Join the roar
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </FRCard>
+              );
+            })
+          )}
         </View>
 
         {/* Today's slate */}
