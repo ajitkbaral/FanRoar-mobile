@@ -58,25 +58,32 @@ export default function HomeScreen() {
   const [upcomingMatches, setUpcomingMatches] = useState<ApiMatch[]>([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
+  const [myRank, setMyRank] = useState<number | null>(null);
 
   const fetchMatches = useCallback(async () => {
     try {
-      const requests: Promise<any>[] = [
+      const [liveRes, upcomingRes] = await Promise.all([
         api.matches.live(),
         api.matches.upcoming(),
-      ];
+      ]);
+      const live = liveRes.data ?? [];
+      const upcoming = upcomingRes.data ?? [];
+      setLiveMatches(live);
+      setUpcomingMatches(upcoming);
+
       if (userId) {
-        requests.push(api.profile.history(userId));
-      }
-      const [liveRes, upcomingRes, historyRes] = await Promise.all(requests);
-      setLiveMatches(liveRes.data ?? []);
-      setUpcomingMatches(upcomingRes.data ?? []);
-      if (historyRes) {
+        const referenceMatchId = live[0]?.matchId ?? upcoming[0]?.matchId;
+        const [historyRes, leaderboardRes] = await Promise.all([
+          api.profile.history(userId),
+          referenceMatchId ? api.leaderboard.global(referenceMatchId, 1) : Promise.resolve(null),
+        ]);
         const energy = (historyRes.data as ApiHistoryEntry[]).reduce(
           (sum, e) => sum + (e.energyContributed ?? 0),
           0,
         );
         setTotalEnergy(energy);
+        const rank = leaderboardRes?.data?.you?.rank;
+        if (rank != null) setMyRank(rank);
       }
     } catch {
       // keep previous data on error
@@ -673,7 +680,7 @@ export default function HomeScreen() {
                 color: theme.text,
               }}
             >
-              #312
+              {myRank != null ? `#${myRank}` : "—"}
             </Text>
             <Text
               style={{
@@ -683,7 +690,7 @@ export default function HomeScreen() {
                 color: theme.textMute,
               }}
             >
-              top 0.4% Brazil
+              {user?.countryCode ?? "GLOBAL"}
             </Text>
           </FRCard>
         </View>
