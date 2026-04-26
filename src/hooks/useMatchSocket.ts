@@ -37,6 +37,10 @@ export function useMatchSocket(
     socket.emit("join_match", { matchId, teamId, userId: resolvedUserId });
   }, [matchId, teamId, resolvedUserId]);
 
+  // Always-current ref so socket listeners never hold a stale joinRoom closure
+  const joinRoomRef = useRef(joinRoom);
+  joinRoomRef.current = joinRoom;
+
   const leaveRoom = useCallback(() => {
     if (!matchId) return;
     LOG("emit leave_match", { matchId });
@@ -49,7 +53,7 @@ export function useMatchSocket(
     socket.on("connect", () => {
       LOG("connected — socket.id:", socket.id);
       reconnectAttempts.current = 0;
-      joinRoom();
+      joinRoomRef.current();
     });
 
     socket.on(
@@ -87,18 +91,19 @@ export function useMatchSocket(
       );
       reconnectAttempts.current++;
       LOG(`reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
-      setTimeout(() => joinRoom(), delay);
+      setTimeout(() => joinRoomRef.current(), delay);
     });
 
     socket.on("connect_error", (err) => {
       LOG("connect_error:", err.message);
     });
 
-    joinRoom();
+    // Attempt join immediately; guard inside joinRoom handles missing values
+    joinRoomRef.current();
 
     const handleAppState = (state: AppStateStatus) => {
       LOG("AppState changed to:", state);
-      if (state === "active") joinRoom();
+      if (state === "active") joinRoomRef.current();
       else leaveRoom();
     };
     const sub = AppState.addEventListener("change", handleAppState);
@@ -114,7 +119,7 @@ export function useMatchSocket(
       socket.off("connect_error");
       sub.remove();
     };
-  }, [matchId, teamId]);
+  }, [matchId, teamId, resolvedUserId]);
 
   const emitEnergy = useCallback(
     (amount: number, inputType: string) => {
