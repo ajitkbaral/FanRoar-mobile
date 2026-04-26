@@ -1033,13 +1033,13 @@ export default function OnboardingScreen({ navigation }: Props) {
     setLoading(true);
     setError('');
     try {
-      const { data: authData } = await api.auth.verifyOtp(fullPhone, otp);
+      const { data: authData } = await api.auth.verifyOtp(fullPhone, otp, country.code);
       setToken(authData.accessToken);
       const { data: me } = await api.auth.me();
       setUser({
-        userId:      me.userId,
+        id:          me.userId,
         displayName: me.displayName ?? '',
-        phone:       me.phone ?? fullPhone,
+        phone:       fullPhone,
         fanRole:     mapApiFanRole(me.fanRole),
         teamKey:     (me.teamKey ?? teamKey) as TeamKey,
         xp:          me.xp ?? 0,
@@ -1067,9 +1067,9 @@ export default function OnboardingScreen({ navigation }: Props) {
       });
       const { data: me } = await api.auth.me();
       setUser({
-        userId:      me.userId,
+        id:          me.userId,
         displayName: me.displayName ?? displayNameLocal,
-        phone:       me.phone ?? fullPhone,
+        phone:       fullPhone,
         fanRole:     mapApiFanRole(me.fanRole),
         teamKey:     (me.teamKey ?? teamKey) as TeamKey,
         xp:          me.xp ?? 0,

@@ -30,7 +30,8 @@ client.interceptors.response.use(
 export const api = {
   auth: {
     requestOtp: (phone: string) => client.post('/auth/request-otp', { phone }),
-    verifyOtp: (phone: string, otp: string) => client.post('/auth/verify-otp', { phone, otp }),
+    verifyOtp: (phone: string, otp: string, countryCode?: string) =>
+      client.post('/auth/verify-otp', { phone, otp, countryCode }),
     me: () => client.get('/auth/me'),
     updateProfile: (data: { displayName?: string; fanRole?: string }) =>
       client.patch('/auth/profile', data),
