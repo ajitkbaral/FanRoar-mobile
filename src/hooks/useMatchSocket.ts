@@ -12,7 +12,7 @@ export function useMatchSocket(
 ) {
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
-  const { setScores, setMomentum, setEventMode, addMatchEvent } =
+  const { setMomentum, setEventMode, addMatchEvent } =
     useMatchStore();
   const { userId, user } = useUserStore();
 
@@ -55,12 +55,11 @@ export function useMatchSocket(
     socket.on(
       "score_update",
       (data: {
-        teamA_score: number;
-        teamB_score: number;
+        teamAEnergy: number;
+        teamBEnergy: number;
         momentumRatio: number;
       }) => {
         LOG("score_update", data);
-        setScores(data.teamA_score, data.teamB_score);
         setMomentum(Math.round(data.momentumRatio * 100));
       },
     );
