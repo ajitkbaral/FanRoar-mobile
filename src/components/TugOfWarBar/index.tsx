@@ -14,9 +14,10 @@ interface Props {
   momentum: number; // 0–100, our team = left
   teamA: TeamInfo;
   teamB: TeamInfo;
+  matchStatus?: 'live' | 'halftime' | 'finished' | 'upcoming';
 }
 
-export default function TugOfWarBar({ theme, momentum, teamA, teamB }: Props) {
+export default function TugOfWarBar({ theme, momentum, teamA, teamB, matchStatus }: Props) {
   const animMomentum = useRef(new Animated.Value(momentum)).current;
 
   useEffect(() => {
@@ -123,6 +124,7 @@ export default function TugOfWarBar({ theme, momentum, teamA, teamB }: Props) {
             fontFamily: 'JetBrainsMono_700Bold',
             fontSize: 18,
             color: theme.text,
+            opacity: matchStatus === 'halftime' || matchStatus === 'finished' ? 0.4 : 1,
           }}>
             {Math.round(momentum)}%
           </Text>
@@ -130,10 +132,34 @@ export default function TugOfWarBar({ theme, momentum, teamA, teamB }: Props) {
             fontFamily: 'JetBrainsMono_700Bold',
             fontSize: 18,
             color: theme.text,
+            opacity: matchStatus === 'halftime' || matchStatus === 'finished' ? 0.4 : 1,
           }}>
             {100 - Math.round(momentum)}%
           </Text>
         </View>
+
+        {/* Halftime / Full-time overlay */}
+        {(matchStatus === 'halftime' || matchStatus === 'finished') && (
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: theme.bg + 'B0',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Text style={{
+              fontFamily: 'JetBrainsMono_700Bold',
+              fontSize: 12,
+              color: matchStatus === 'finished' ? theme.textMute : theme.warning,
+              letterSpacing: 1.5,
+            }}>
+              {matchStatus === 'finished' ? 'FULL TIME · MATCH ENDED' : 'HALF TIME · PAUSED'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Footer labels */}

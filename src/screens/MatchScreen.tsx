@@ -116,14 +116,16 @@ export default function MatchScreen() {
     onBatchReady: socketEmit,
   });
 
+  const interactionAllowed = match?.status === "live";
+
   useShakeDetector({
     onShake: () => handleInput("shake"),
-    enabled: !!supportingTeamId,
+    enabled: !!supportingTeamId && interactionAllowed,
   });
 
   const handleInput = useCallback(
     (kind: "tap" | "shake" | "voice" | "charge", raw = 1) => {
-      if (!supportingTeamId) return;
+      if (!supportingTeamId || !interactionAllowed) return;
       const gain = emitEnergy(kind, raw) ?? 1;
       // teamA owns the left (high momentum); teamB owns the right (low momentum)
       const direction = supportingTeamId === match?.teamB.id ? -1 : 1;
@@ -136,7 +138,7 @@ export default function MatchScreen() {
       setTimeout(() => setBursts((b) => b.filter((x) => x.id !== id)), 700);
       setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), 900);
     },
-    [emitEnergy, setMomentum, supportingTeamId],
+    [emitEnergy, setMomentum, supportingTeamId, interactionAllowed],
   );
 
   const handleHoldRelease = useCallback(
@@ -353,6 +355,7 @@ export default function MatchScreen() {
           momentum={momentum}
           teamA={teamA}
           teamB={teamB}
+          matchStatus={match?.status}
         />
 
         {/* Event banner */}
@@ -380,6 +383,14 @@ export default function MatchScreen() {
           combo={combo}
           role={fanRole as FanRole}
           activePowerup={activePowerup}
+          disabled={!interactionAllowed}
+          disabledLabel={
+            match?.status === "halftime"
+              ? "HALF TIME · MATCH RESUMES SOON"
+              : match?.status === "finished"
+                ? "FULL TIME · MATCH ENDED"
+                : undefined
+          }
         />
 
         {/* Energy + multiplier meters */}

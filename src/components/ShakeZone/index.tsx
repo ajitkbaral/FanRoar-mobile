@@ -30,6 +30,8 @@ interface Props {
   combo: number;
   role: FanRole;
   activePowerup: string | null;
+  disabled?: boolean;
+  disabledLabel?: string;
 }
 
 export default function ShakeZone({
@@ -42,6 +44,8 @@ export default function ShakeZone({
   combo,
   role,
   activePowerup,
+  disabled = false,
+  disabledLabel,
 }: Props) {
   const isMega = activePowerup === 'mega';
   const holdTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -81,8 +85,8 @@ export default function ShakeZone({
 
   return (
     <TouchableWithoutFeedback
-      onPressIn={() => { onTap(); startHold(); }}
-      onPressOut={stopHold}
+      onPressIn={disabled ? undefined : () => { onTap(); startHold(); }}
+      onPressOut={disabled ? undefined : stopHold}
     >
       <View style={{
         marginHorizontal: 20,
@@ -206,6 +210,27 @@ export default function ShakeZone({
           <InputChip theme={theme} icon="bolt" label="TAP" sub="× COMBO" />
           <InputChip theme={theme} icon="mic" label="VOICE" sub=">65 dB" />
         </View>
+
+        {/* Disabled overlay for halftime / full-time */}
+        {disabled && (
+          <View style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: theme.bg + 'C0',
+            borderRadius: 22,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Text style={{
+              fontFamily: 'JetBrainsMono_700Bold',
+              fontSize: 13,
+              color: theme.textMute,
+              letterSpacing: 1.5,
+              textAlign: 'center',
+            }}>
+              {disabledLabel ?? 'INTERACTION PAUSED'}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
