@@ -19,7 +19,7 @@ interface MatchInfo {
   scoreB: number;
   stage: string;
   date: string;
-  venue: string;
+  venue?: string;
 }
 
 interface Props {
@@ -62,7 +62,7 @@ export default function MomentCard({ theme, stats, match }: Props) {
           letterSpacing: 0.6,
           marginTop: 2,
         }}>
-          {match.stage} · {match.date} · {match.venue}
+          {match.stage} · {match.date}{match.venue ? ` · ${match.venue}` : ''}
         </Text>
 
         <View style={{ marginTop: 16 }}>

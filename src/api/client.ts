@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useUserStore } from '../store/userStore';
-import { mapMatch, BackendMatch, LeaderboardResponse } from './types';
+import { mapMatch, BackendMatch, LeaderboardResponse, type ApiRecap } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION ?? 'v1';
@@ -64,7 +64,7 @@ export const api = {
     badges: (userId: string) => client.get(`/profile/${userId}/badges`),
     history: (userId: string) => client.get(`/profile/${userId}/history`),
     recap: (userId: string, matchId: string) =>
-      client.get(`/profile/${userId}/recap/${matchId}`),
+      client.get<ApiRecap>(`/profile/${userId}/recap/${matchId}`),
   },
 };
 

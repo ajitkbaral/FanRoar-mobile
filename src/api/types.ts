@@ -110,4 +110,13 @@ export interface ApiRecap {
   rank: number;
   impactPercent: number;
   badgesUnlocked: ApiBadge[];
+  match: {
+    teamA: string;
+    teamB: string;
+    scoreA: number;
+    scoreB: number;
+    stage: string;
+    date: string;
+    venue: string;
+  };
 }

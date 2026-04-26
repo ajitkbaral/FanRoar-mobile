@@ -73,6 +73,12 @@ export default function MatchScreen() {
     if (match?.status === "halftime") setEventMode("halftime");
     else if (match?.status === "live") setEventMode("normal");
   }, [match?.status]);
+
+  useEffect(() => {
+    if (match?.status === "finished" && match.id) {
+      navigation.replace("Recap", { matchId: match.id });
+    }
+  }, [match?.status, match?.id]);
   const { myEnergy, combo, activePowerup, activatePowerup } = useEnergyStore();
 
   const [bursts, setBursts] = useState<Burst[]>([]);
@@ -359,7 +365,14 @@ export default function MatchScreen() {
         />
 
         {/* Event banner */}
-        {eventMode !== "normal" &&
+        {match?.status === "finished" && matchId ? (
+          <EventBanner
+            theme={theme}
+            config={{ label: "FULL TIME · VIEW YOUR RECAP", color: theme.accent, icon: "trophy" }}
+            onPress={() => navigation.navigate("Recap", { matchId })}
+          />
+        ) : (
+          eventMode !== "normal" &&
           eventConfig[eventMode as keyof typeof eventConfig] && (
             <EventBanner
               theme={theme}
@@ -370,7 +383,8 @@ export default function MatchScreen() {
                   : undefined
               }
             />
-          )}
+          )
+        )}
 
         {/* Shake zone */}
         <ShakeZone
@@ -409,6 +423,7 @@ export default function MatchScreen() {
           role={fanRole as FanRole}
           onActivate={handlePowerup}
         />
+
       </ScrollView>
 
       {/* Team picker overlay — blocks interaction until a team is chosen */}
