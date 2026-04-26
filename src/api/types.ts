@@ -2,7 +2,7 @@ export interface ApiMatch {
   matchId: string;
   teamA: { id: string; code: string; name: string; flagUrl?: string };
   teamB: { id: string; code: string; name: string; flagUrl?: string };
-  status: 'live' | 'upcoming' | 'finished';
+  status: 'live' | 'halftime' | 'upcoming' | 'finished';
   kickoffTime: string;
   stage: string;
   scores?: { teamA: number; teamB: number };
@@ -34,8 +34,9 @@ export interface BackendMatch {
   matchTotals?: _BackendMatchTotal[];
 }
 
-function _mapStatus(s: string): ApiMatch['status'] {
-  if (s === 'LIVE' || s === 'HALF_TIME') return 'live';
+export function mapMatchStatus(s: string): ApiMatch['status'] {
+  if (s === 'LIVE') return 'live';
+  if (s === 'HALF_TIME') return 'halftime';
   if (s === 'FULL_TIME' || s === 'CANCELLED') return 'finished';
   return 'upcoming';
 }
@@ -46,7 +47,7 @@ export function mapMatch(m: BackendMatch): ApiMatch {
     matchId: m.id,
     teamA: { id: m.teamA.id, code: m.teamA.countryCode, name: m.teamA.name, flagUrl: m.teamA.flagUrl ?? undefined },
     teamB: { id: m.teamB.id, code: m.teamB.countryCode, name: m.teamB.name, flagUrl: m.teamB.flagUrl ?? undefined },
-    status: _mapStatus(m.status),
+    status: mapMatchStatus(m.status),
     kickoffTime: m.startTime,
     stage: m.sport,
     momentumRatio: teamATotal?.momentumRatio,

@@ -18,7 +18,7 @@ export interface Match {
   id: string;
   teamA: MatchTeam;
   teamB: MatchTeam;
-  status: 'live' | 'upcoming' | 'finished';
+  status: 'live' | 'halftime' | 'upcoming' | 'finished';
   minute?: number;
   stage?: string;
 }
@@ -34,6 +34,7 @@ interface MatchState {
   supportingTeamId: string | null;
 
   setMatch: (match: Match) => void;
+  setMatchStatus: (status: Match['status']) => void;
   setScores: (scoreA: number, scoreB: number) => void;
   setMomentum: (momentum: number | ((prev: number) => number)) => void;
   setEventMode: (mode: EventMode) => void;
@@ -64,6 +65,7 @@ export const useMatchStore = create<MatchState>((set) => ({
       supportingTeamId: sameMatch ? s.supportingTeamId : null,
     };
   }),
+  setMatchStatus: (status) => set((s) => ({ match: s.match ? { ...s.match, status } : null })),
   setScores: (scoreA, scoreB) => set({ scoreA, scoreB }),
   setMomentum: (momentum) => set((s) => ({
     momentum: Math.max(0, Math.min(100, typeof momentum === 'function' ? momentum(s.momentum) : momentum)),

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { getSocket } from "../api/socket";
+import { mapMatchStatus } from "../api/types";
 import { useMatchStore } from "../store/matchStore";
 import { useUserStore } from "../store/userStore";
 
@@ -12,7 +13,7 @@ export function useMatchSocket(
 ) {
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
-  const { setMomentum, setEventMode, addMatchEvent } =
+  const { setMomentum, setEventMode, addMatchEvent, setMatchStatus } =
     useMatchStore();
   const { userId, user } = useUserStore();
 
@@ -59,12 +60,14 @@ export function useMatchSocket(
     socket.on(
       "score_update",
       (data: {
+        status?: string;
         teamAEnergy: number;
         teamBEnergy: number;
         momentumRatio: number;
       }) => {
         LOG("score_update", data);
         setMomentum(Math.round(data.momentumRatio * 100));
+        if (data.status) setMatchStatus(mapMatchStatus(data.status));
       },
     );
 
@@ -73,7 +76,11 @@ export function useMatchSocket(
       addMatchEvent(data);
       if (data.type === "goal") setEventMode("goal");
       else if (data.type === "clutch") setEventMode("clutch");
-      else if (data.type === "halftime") setEventMode("halftime");
+    });
+
+    socket.on("match_status", (data: { matchId: string; status: string }) => {
+      LOG("match_status", data);
+      setMatchStatus(mapMatchStatus(data.status));
     });
 
     socket.on(
@@ -114,6 +121,7 @@ export function useMatchSocket(
       socket.off("connect");
       socket.off("score_update");
       socket.off("match_event");
+      socket.off("match_status");
       socket.off("boost_activated");
       socket.off("disconnect");
       socket.off("connect_error");

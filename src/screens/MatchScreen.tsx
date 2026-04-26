@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
-import { useRoute, RouteProp } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../navigation";
 import { buildTheme } from "../theme";
 import { useUserStore } from "../store/userStore";
 import { useMatchStore } from "../store/matchStore";
@@ -39,6 +41,7 @@ interface Floater {
 }
 
 function matchStatusLabel(status: string, minute?: number): string {
+  if (status === "halftime") return "HALF TIME";
   if (status !== "live") return status.toUpperCase();
   const half = (minute ?? 0) > 45 ? "2ND HALF" : "1ST HALF";
   return minute != null ? `LIVE · ${half} · ${minute}'` : `LIVE · ${half}`;
@@ -50,6 +53,8 @@ export default function MatchScreen() {
 
   const { isDark, teamKey, fanRole } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const {
     match,
     scoreA,
@@ -59,9 +64,15 @@ export default function MatchScreen() {
     setMatch,
     setScores,
     setMomentum,
+    setEventMode,
     supportingTeamId,
     setSupportingTeamId,
   } = useMatchStore();
+
+  useEffect(() => {
+    if (match?.status === "halftime") setEventMode("halftime");
+    else if (match?.status === "live") setEventMode("normal");
+  }, [match?.status]);
   const { myEnergy, combo, activePowerup, activatePowerup } = useEnergyStore();
 
   const [bursts, setBursts] = useState<Burst[]>([]);
@@ -230,7 +241,7 @@ export default function MatchScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {match?.status === "live" && <FRLiveDot color="#ff3b30" />}
+            {(match?.status === "live" || match?.status === "halftime") && <FRLiveDot color="#ff3b30" />}
             <Text
               style={{
                 fontFamily: "JetBrainsMono_400Regular",
@@ -350,6 +361,11 @@ export default function MatchScreen() {
             <EventBanner
               theme={theme}
               config={eventConfig[eventMode as keyof typeof eventConfig]}
+              onPress={
+                eventMode === "halftime" && matchId
+                  ? () => navigation.navigate("MiniGame", { matchId: matchId! })
+                  : undefined
+              }
             />
           )}
 
@@ -614,12 +630,16 @@ function TeamPicker({
 function EventBanner({
   theme,
   config,
+  onPress,
 }: {
   theme: ReturnType<typeof buildTheme>;
   config: { label: string; color: string; icon: string };
+  onPress?: () => void;
 }) {
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={onPress ? 0.75 : 1}
+      onPress={onPress}
       style={{
         marginHorizontal: 20,
         marginTop: 8,
@@ -662,6 +682,6 @@ function EventBanner({
       >
         {config.label}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
