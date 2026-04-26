@@ -14,7 +14,7 @@ interface Badge {
 }
 
 interface UserProfile {
-  userId: string;
+  id: string;
   displayName: string;
   phone: string;
   fanRole: FanRole;
@@ -69,7 +69,7 @@ export const useUserStore = create<UserState>()(
       setToken: (token) => set({ token }),
       setUser: (user) => set({
         user,
-        userId: user.userId,
+        userId: user.id,
         fanRole: user.fanRole,
         teamKey: user.teamKey,
         displayName: user.displayName,

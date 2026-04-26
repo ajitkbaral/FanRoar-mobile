@@ -1,99 +1,147 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
-import { getSocket } from '../api/socket';
-import { useMatchStore } from '../store/matchStore';
-import { useUserStore } from '../store/userStore';
+import { useEffect, useRef, useCallback } from "react";
+import { AppState, AppStateStatus } from "react-native";
+import { getSocket } from "../api/socket";
+import { useMatchStore } from "../store/matchStore";
+import { useUserStore } from "../store/userStore";
 
-export function useMatchSocket(matchId: string | null, teamId: string | null = null) {
+const LOG = (...args: unknown[]) => console.log("[Socket]", ...args);
+
+export function useMatchSocket(
+  matchId: string | null,
+  teamId: string | null = null,
+) {
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
-  const { setScores, setMomentum, setEventMode, addMatchEvent } = useMatchStore();
-  const { userId } = useUserStore();
+  const { setScores, setMomentum, setEventMode, addMatchEvent } =
+    useMatchStore();
+  const { userId, user } = useUserStore();
+
+  const resolvedUserId = userId ?? user?.id ?? null;
 
   const joinRoom = useCallback(() => {
-    if (!matchId || !userId) return;
+    // Wait until match, team, and user are all known before joining
+    if (!matchId || !teamId || !resolvedUserId) {
+      LOG("join_match skipped — missing", {
+        matchId,
+        teamId,
+        userId: resolvedUserId,
+      });
+      return;
+    }
     const socket = socketRef.current;
-    if (!socket.connected) socket.connect();
-    socket.emit('join_match', { matchId, userId });
-  }, [matchId, userId]);
+    if (!socket.connected) {
+      LOG("not connected — calling connect()");
+      socket.connect();
+    }
+    LOG("emit join_match", { matchId, teamId, userId: resolvedUserId });
+    socket.emit("join_match", { matchId, teamId, userId: resolvedUserId });
+  }, [matchId, teamId, resolvedUserId]);
 
   const leaveRoom = useCallback(() => {
     if (!matchId) return;
-    socketRef.current.emit('leave_match', { matchId });
+    LOG("emit leave_match", { matchId });
+    socketRef.current.emit("leave_match", { matchId });
   }, [matchId]);
 
   useEffect(() => {
     const socket = socketRef.current;
 
-    socket.on('connect', () => {
+    socket.on("connect", () => {
+      LOG("connected — socket.id:", socket.id);
       reconnectAttempts.current = 0;
       joinRoom();
     });
 
-    socket.on('score_update', (data: {
-      teamA_score: number;
-      teamB_score: number;
-      momentumRatio: number;
-    }) => {
-      setScores(data.teamA_score, data.teamB_score);
-      setMomentum(Math.round(data.momentumRatio * 100));
-    });
+    socket.on(
+      "score_update",
+      (data: {
+        teamA_score: number;
+        teamB_score: number;
+        momentumRatio: number;
+      }) => {
+        LOG("score_update", data);
+        setScores(data.teamA_score, data.teamB_score);
+        setMomentum(Math.round(data.momentumRatio * 100));
+      },
+    );
 
-    socket.on('match_event', (data: { type: string; teamId: string }) => {
+    socket.on("match_event", (data: { type: string; teamId: string }) => {
+      LOG("match_event", data);
       addMatchEvent(data);
-      if (data.type === 'goal') setEventMode('goal');
-      else if (data.type === 'clutch') setEventMode('clutch');
-      else if (data.type === 'halftime') setEventMode('halftime');
+      if (data.type === "goal") setEventMode("goal");
+      else if (data.type === "clutch") setEventMode("clutch");
+      else if (data.type === "halftime") setEventMode("halftime");
     });
 
-    socket.on('boost_activated', (data: { teamId: string; powerUpType: string; durationMs: number }) => {
-      // handled by energy store
-    });
+    socket.on(
+      "boost_activated",
+      (data: { teamId: string; powerUpType: string; durationMs: number }) => {
+        LOG("boost_activated", data);
+      },
+    );
 
-    socket.on('disconnect', () => {
-      const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts.current));
+    socket.on("disconnect", (reason) => {
+      LOG("disconnected — reason:", reason);
+      const delay = Math.min(
+        30000,
+        1000 * Math.pow(2, reconnectAttempts.current),
+      );
       reconnectAttempts.current++;
+      LOG(`reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
       setTimeout(() => joinRoom(), delay);
+    });
+
+    socket.on("connect_error", (err) => {
+      LOG("connect_error:", err.message);
     });
 
     joinRoom();
 
     const handleAppState = (state: AppStateStatus) => {
-      if (state === 'active') joinRoom();
+      LOG("AppState changed to:", state);
+      if (state === "active") joinRoom();
       else leaveRoom();
     };
-    const sub = AppState.addEventListener('change', handleAppState);
+    const sub = AppState.addEventListener("change", handleAppState);
 
     return () => {
+      LOG("cleanup — leaving room, matchId:", matchId, "teamId:", teamId);
       leaveRoom();
-      socket.off('connect');
-      socket.off('score_update');
-      socket.off('match_event');
-      socket.off('boost_activated');
-      socket.off('disconnect');
+      socket.off("connect");
+      socket.off("score_update");
+      socket.off("match_event");
+      socket.off("boost_activated");
+      socket.off("disconnect");
+      socket.off("connect_error");
       sub.remove();
     };
-  }, [matchId]);
+  }, [matchId, teamId]);
 
-  const emitEnergy = useCallback((amount: number, inputType: string) => {
-    if (!matchId) return;
-    socketRef.current.emit('energy_batch', {
-      matchId,
-      teamId,
-      amount,
-      inputType,
-      timestamp: Date.now(),
-    });
-  }, [matchId]);
+  const emitEnergy = useCallback(
+    (amount: number, inputType: string) => {
+      if (!matchId) return;
+      socketRef.current.emit("energy_batch", {
+        matchId,
+        teamId,
+        amount,
+        inputType,
+        timestamp: Date.now(),
+      });
+    },
+    [matchId, teamId],
+  );
 
-  const activatePowerUp = useCallback((powerUpType: string) => {
-    if (!matchId) return;
-    socketRef.current.emit('activate_powerup', {
-      matchId,
-      teamId: useUserStore.getState().teamId,
-      powerUpType,
-    });
-  }, [matchId]);
+  const activatePowerUp = useCallback(
+    (powerUpType: string) => {
+      if (!matchId) return;
+      socketRef.current.emit("activate_powerup", {
+        matchId,
+        teamId: useUserStore.getState().teamId,
+        powerUpType,
+      });
+    },
+    [matchId],
+  );
 
   return { emitEnergy, activatePowerUp };
 }
