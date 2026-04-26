@@ -66,7 +66,7 @@ export default function MatchScreen() {
 
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [floaters, setFloaters] = useState<Floater[]>([]);
-  const [holdProgress, setHoldProgress] = useState(0);
+  const [holdProgress] = useState(0);
   const [matchLoading, setMatchLoading] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
 
@@ -544,22 +544,16 @@ function TeamPicker({
             <TouchableOpacity
               key={id}
               onPress={() => onSelect(id)}
-              activeOpacity={0.85}
+              activeOpacity={0.8}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 16,
                 padding: 18,
                 borderRadius: 18,
-                // backgroundColor: selected
-                //   ? team.color + "28"
-                //   : team.color + "14",
-                // borderWidth: 1.5,
-                // borderColor: selected ? team.color + "CC" : team.color + "50",
-
-                backgroundColor: team.color + "14",
-                borderWidth: 1.5,
-                borderColor: team.color + "50",
+                backgroundColor: selected ? team.color + "22" : theme.surface,
+                borderWidth: selected ? 2 : 1,
+                borderColor: selected ? "#E8C429" : theme.border,
               }}
             >
               <View
@@ -570,8 +564,8 @@ function TeamPicker({
                   backgroundColor: team.color,
                   shadowColor: team.color,
                   shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: selected ? 0.7 : 0.4,
-                  shadowRadius: selected ? 18 : 10,
+                  shadowOpacity: selected ? 0.7 : 0,
+                  shadowRadius: selected ? 16 : 0,
                   overflow: "hidden",
                 }}
               >
@@ -588,7 +582,7 @@ function TeamPicker({
                   style={{
                     fontFamily: "InterTight_700Bold",
                     fontSize: 20,
-                    color: theme.text,
+                    color: selected ? theme.text : theme.textDim,
                     letterSpacing: -0.4,
                   }}
                 >
@@ -603,14 +597,14 @@ function TeamPicker({
                     marginTop: 2,
                   }}
                 >
-                  {selected ? "CURRENTLY SELECTED" : team.code}
+                  {team.code}
                 </Text>
               </View>
-              <FRIcon
-                name={selected ? "check" : "chevron-right"}
-                size={18}
-                color={selected ? team.color : theme.textMute}
-              />
+              {selected ? (
+                <FRIcon name="check" size={20} color="#E8C429" strokeWidth={2.5} />
+              ) : (
+                <FRIcon name="chevron-right" size={18} color={theme.textMute} />
+              )}
             </TouchableOpacity>
           );
         })}
