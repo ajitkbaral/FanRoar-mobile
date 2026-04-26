@@ -155,5 +155,5 @@ export function useMatchSocket(
     [matchId],
   );
 
-  return { emitEnergy, activatePowerUp };
+  return { emitEnergy, activatePowerUp, leaveRoom };
 }

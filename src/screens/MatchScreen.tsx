@@ -49,7 +49,6 @@ function matchStatusLabel(status: string, minute?: number): string {
 
 export default function MatchScreen() {
   const route = useRoute<RouteProp<MainTabParamList, "Match">>();
-  const matchId = route.params?.matchId ?? null;
 
   const { isDark, teamKey, fanRole } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
@@ -67,7 +66,12 @@ export default function MatchScreen() {
     setEventMode,
     supportingTeamId,
     setSupportingTeamId,
+    resetMatch,
   } = useMatchStore();
+
+  // Prefer route params; fall back to the match already in the store so that
+  // tapping the Match tab directly (no params) still rejoins the socket room.
+  const matchId = route.params?.matchId ?? match?.id ?? null;
 
   useEffect(() => {
     if (match?.status === "halftime") setEventMode("halftime");
@@ -113,7 +117,15 @@ export default function MatchScreen() {
       .finally(() => setMatchLoading(false));
   }, [matchId]);
 
-  const { emitEnergy: socketEmit } = useMatchSocket(matchId, supportingTeamId);
+  const { emitEnergy: socketEmit, leaveRoom } = useMatchSocket(matchId, supportingTeamId);
+
+  const handleLeave = useCallback(() => {
+    leaveRoom();
+    resetMatch();
+    // Clear the stale matchId param so rejoining the same match re-triggers useEffect
+    (navigation as any).setParams({ matchId: undefined });
+    (navigation as any).navigate("Home");
+  }, [leaveRoom, resetMatch, navigation]);
 
   const { emitEnergy, getMultiplierDisplay } = useEnergyEngine({
     role: fanRole as FanRole,
@@ -259,19 +271,47 @@ export default function MatchScreen() {
                 textTransform: "uppercase",
               }}
             >
-              {statusLabel}
+              {statusLabel}{stageLabel ? ` · ${stageLabel}` : ""}
             </Text>
           </View>
-          <Text
-            style={{
-              fontFamily: "JetBrainsMono_400Regular",
-              fontSize: 11,
-              color: theme.textMute,
-              letterSpacing: 0.5,
-            }}
-          >
-            {stageLabel}
-          </Text>
+          {match ? (
+            <TouchableOpacity
+              onPress={handleLeave}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+                paddingVertical: 5,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                backgroundColor: theme.surface2,
+              }}
+            >
+              <FRIcon name="close" size={11} color={theme.textDim} />
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 11,
+                  color: theme.textDim,
+                  letterSpacing: 0.5,
+                }}
+              >
+                LEAVE
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_400Regular",
+                fontSize: 11,
+                color: theme.textMute,
+                letterSpacing: 0.5,
+              }}
+            >
+              {stageLabel}
+            </Text>
+          )}
         </View>
 
         {/* Scoreline */}
