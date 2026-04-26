@@ -85,6 +85,17 @@ export interface ApiLeaderboardEntry {
   isYou?: boolean;
 }
 
+export interface ApiHistoryEntry {
+  matchId: string;
+  energyContributed: number;
+  match: {
+    id: string;
+    teamA: { name: string };
+    teamB: { name: string };
+    startTime: string;
+  };
+}
+
 export interface ApiRecap {
   matchId: string;
   energyDelivered: number;

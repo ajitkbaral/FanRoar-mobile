@@ -17,7 +17,7 @@ import FRIcon from "../components/shared/FRIcon";
 import FRLiveDot from "../components/shared/FRLiveDot";
 import { TEAM_COLORS } from "../theme/colors";
 import { api } from "../api/client";
-import { ApiMatch } from "../api/types";
+import { ApiMatch, ApiHistoryEntry } from "../api/types";
 
 function formatKickoff(iso: string): string {
   const date = new Date(iso);
@@ -50,29 +50,41 @@ function formatUntil(iso: string): string {
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { isDark, teamKey, user } = useUserStore();
+  const { isDark, teamKey, user, userId } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
   const [refreshing, setRefreshing] = useState(false);
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<ApiMatch[]>([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
+  const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
 
   const fetchMatches = useCallback(async () => {
     try {
-      const [liveRes, upcomingRes] = await Promise.all([
+      const requests: Promise<any>[] = [
         api.matches.live(),
         api.matches.upcoming(),
-      ]);
+      ];
+      if (userId) {
+        requests.push(api.profile.history(userId));
+      }
+      const [liveRes, upcomingRes, historyRes] = await Promise.all(requests);
       setLiveMatches(liveRes.data ?? []);
       setUpcomingMatches(upcomingRes.data ?? []);
+      if (historyRes) {
+        const energy = (historyRes.data as ApiHistoryEntry[]).reduce(
+          (sum, e) => sum + (e.energyContributed ?? 0),
+          0,
+        );
+        setTotalEnergy(energy);
+      }
     } catch {
       // keep previous data on error
     } finally {
       setMatchesLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -585,17 +597,19 @@ export default function HomeScreen() {
                 color: theme.text,
               }}
             >
-              48,217
+              {totalEnergy != null
+                ? totalEnergy.toLocaleString()
+                : "—"}
             </Text>
             <Text
               style={{
                 marginTop: 4,
                 fontFamily: "JetBrainsMono_400Regular",
                 fontSize: 10,
-                color: theme.success,
+                color: theme.textMute,
               }}
             >
-              +12% vs round
+              {totalEnergy != null ? "THIS TOURNAMENT" : "LOADING..."}
             </Text>
           </FRCard>
           <FRCard theme={theme} padding={14} style={{ flex: 1 }}>
