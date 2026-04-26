@@ -199,7 +199,9 @@ export default function HomeScreen() {
                 {displayName}.
               </Text>
             </View>
-            <View
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Profile")}
+              activeOpacity={0.75}
               style={{
                 width: 40,
                 height: 40,
@@ -220,7 +222,7 @@ export default function HomeScreen() {
               >
                 {displayName[0]}
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
