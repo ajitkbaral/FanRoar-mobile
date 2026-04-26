@@ -2,8 +2,9 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, SafeAreaView, Share,
 } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence,
 } from 'react-native-reanimated';
@@ -18,6 +19,7 @@ import FRCard from '../components/shared/FRCard';
 
 export default function RecapScreen() {
   const { matchId } = useRoute<RouteProp<RootStackParamList, 'Recap'>>().params;
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark, teamKey, userId } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
@@ -79,10 +81,19 @@ export default function RecapScreen() {
           paddingHorizontal: 20,
           paddingTop: 60,
         }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Main')}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+          >
+            <FRIcon name="home" size={14} color={theme.textMute} />
+            <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: theme.textMute, letterSpacing: 0.5 }}>
+              Home
+            </Text>
+          </TouchableOpacity>
           <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: theme.textMute, letterSpacing: 0.5 }}>
             Match recap · ready to share
           </Text>
-          <FRIcon name="share" size={14} color={theme.textMute} />
         </View>
 
         {/* Title */}
