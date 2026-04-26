@@ -2,12 +2,12 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
-  Image,
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
+import { SvgUri } from "react-native-svg";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { buildTheme } from "../theme";
 import { useUserStore } from "../store/userStore";
@@ -432,7 +432,7 @@ function ScoreSide({
           width: 36,
           height: 36,
           borderRadius: 8,
-          backgroundColor: team.color,
+          backgroundColor: team.flagUrl ? theme.surface2 : team.color,
           shadowColor: team.color,
           shadowOffset: { width: 0, height: 0 },
           shadowOpacity: active ? 0.7 : 0.3,
@@ -442,14 +442,10 @@ function ScoreSide({
         }}
       >
         {team.flagUrl && (
-          <Image
-            source={{ uri: team.flagUrl }}
-            style={{ width: "100%", height: "100%" }}
-            resizeMode="cover"
-          />
+          <SvgUri uri={team.flagUrl} width="100%" height="100%" />
         )}
       </View>
-      <View style={{ alignItems: side === "L" ? "flex-start" : "flex-end" }}>
+      <View style={{ alignItems: "flex-start" }}>
         <Text
           style={{
             fontFamily: "JetBrainsMono_400Regular",
@@ -561,7 +557,7 @@ function TeamPicker({
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  backgroundColor: team.color,
+                  backgroundColor: team.flagUrl ? theme.surface2 : team.color,
                   shadowColor: team.color,
                   shadowOffset: { width: 0, height: 0 },
                   shadowOpacity: selected ? 0.7 : 0,
@@ -570,11 +566,7 @@ function TeamPicker({
                 }}
               >
                 {team.flagUrl && (
-                  <Image
-                    source={{ uri: team.flagUrl }}
-                    style={{ width: "100%", height: "100%" }}
-                    resizeMode="cover"
-                  />
+                  <SvgUri uri={team.flagUrl} width="100%" height="100%" />
                 )}
               </View>
               <View style={{ flex: 1 }}>
