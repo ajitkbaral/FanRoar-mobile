@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View } from 'react-native';
 import { useUserStore } from '../store/userStore';
 import { buildTheme } from '../theme';
+import { api } from '../api/client';
 import FRTabBar from '../components/shared/FRTabBar';
 
 // Screens
@@ -62,8 +63,39 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const { hasCompletedOnboarding, isDark, teamKey } = useUserStore();
+  const { hasCompletedOnboarding, token, _hasHydrated, isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    if (!_hasHydrated) return;
+
+    const storedToken = useUserStore.getState().token;
+
+    if (!storedToken) {
+      setAuthChecked(true);
+      return;
+    }
+
+    api.auth.me()
+      .then((res) => {
+        useUserStore.getState().setUser(res.data);
+      })
+      .catch(() => {
+        // 401 interceptor calls logout(), clearing token + hasCompletedOnboarding
+      })
+      .finally(() => setAuthChecked(true));
+  }, [_hasHydrated]);
+
+  if (!_hasHydrated || !authChecked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={theme.accent} />
+      </View>
+    );
+  }
+
+  const isAuthenticated = !!token && hasCompletedOnboarding;
 
   return (
     <NavigationContainer
@@ -86,7 +118,7 @@ export default function AppNavigator() {
       }}
     >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!hasCompletedOnboarding ? (
+        {!isAuthenticated ? (
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         ) : null}
         <Stack.Screen name="Main"     component={MainTabs} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
 import FRCard from '../components/shared/FRCard';
@@ -33,7 +33,7 @@ const LOCKED_PLACEHOLDERS = [
 ];
 
 export default function ProfileScreen() {
-  const { isDark, teamKey, fanRole, user } = useUserStore();
+  const { isDark, teamKey, fanRole, user, logout } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
   const displayName  = user?.displayName || 'Fan';
@@ -209,6 +209,33 @@ export default function ProfileScreen() {
               No badges yet · Keep cheering!
             </Text>
           )}
+        </View>
+
+        {/* Logout */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
+          <TouchableOpacity
+            onPress={logout}
+            activeOpacity={0.75}
+            style={{
+              height: 48,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: theme.danger,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <FRIcon name="log-out" size={16} color={theme.danger} />
+            <Text style={{
+              fontFamily: 'InterTight_700Bold',
+              fontSize: 14,
+              color: theme.danger,
+            }}>
+              Log out
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
