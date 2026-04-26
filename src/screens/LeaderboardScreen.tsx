@@ -1,46 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import Animated, {
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  cancelAnimation,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
+import { useMatchStore } from '../store/matchStore';
 import FRLiveDot from '../components/shared/FRLiveDot';
-import { TEAM_COLORS } from '../theme/colors';
+import { api } from '../api/client';
+import { ApiLeaderboardEntry } from '../api/types';
 
 type Tab = 'country' | 'city' | 'friends';
-
-interface Row {
-  rank: number;
-  name: string;
-  code: string;
-  score: number;
-  color: string;
-  isYou?: boolean;
-}
-
-const DATA: Record<Tab, Row[]> = {
-  country: [
-    { rank: 1, name: 'Brazil',    code: 'BRA', score: 18420391, color: '#E8C429', isYou: true },
-    { rank: 2, name: 'Argentina', code: 'ARG', score: 17833102, color: '#62AFE0' },
-    { rank: 3, name: 'France',    code: 'FRA', score: 14217803, color: '#6060E0' },
-    { rank: 4, name: 'Germany',   code: 'GER', score: 12108229, color: '#A0A4B0' },
-    { rank: 5, name: 'England',   code: 'ENG', score: 11402993, color: '#E85030' },
-    { rank: 6, name: 'Spain',     code: 'ESP', score: 10211440, color: '#E8A000' },
-    { rank: 7, name: 'Mexico',    code: 'MEX', score:  9882371, color: '#00B840' },
-  ],
-  city: [
-    { rank: 1, name: 'São Paulo',    code: 'SP',  score: 4128902, color: '#E8C429', isYou: true },
-    { rank: 2, name: 'Buenos Aires', code: 'BA',  score: 3982103, color: '#62AFE0' },
-    { rank: 3, name: 'Rio',          code: 'RIO', score: 3211089, color: '#E8C429' },
-    { rank: 4, name: 'Mexico City',  code: 'MEX', score: 2880103, color: '#00B840' },
-    { rank: 5, name: 'Madrid',       code: 'MAD', score: 2402981, color: '#E8A000' },
-  ],
-  friends: [
-    { rank: 1, name: 'Lucia G.',  code: 'LG', score: 84392, color: '#E8C429' },
-    { rank: 2, name: 'You',       code: 'ME', score: 48217, color: '#E8C429', isYou: true },
-    { rank: 3, name: 'Joel R.',   code: 'JR', score: 41902, color: '#00B840' },
-    { rank: 4, name: 'Carla P.',  code: 'CP', score: 38211, color: '#E85030' },
-    { rank: 5, name: 'Diego B.',  code: 'DB', score: 21084, color: '#6060E0' },
-  ],
-};
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'country', label: 'Country' },
@@ -48,16 +23,140 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'friends', label: 'Friends' },
 ];
 
-export default function LeaderboardScreen() {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
-  const [activeTab, setActiveTab] = useState<Tab>('country');
+const EMPTY_ROWS: Record<Tab, ApiLeaderboardEntry[]> = { country: [], city: [], friends: [] };
+const EMPTY_YOU: Record<Tab, ApiLeaderboardEntry | null> = { country: null, city: null, friends: null };
 
-  const rows = DATA[activeTab];
-  const max = Math.max(...rows.map(r => r.score));
+export default function LeaderboardScreen() {
+  const { isDark, teamKey, user } = useUserStore();
+  const { match } = useMatchStore();
+  const theme = buildTheme(isDark, teamKey);
+
+  const [activeTab, setActiveTab] = useState<Tab>('country');
+  const [rows, setRows] = useState<Record<Tab, ApiLeaderboardEntry[]>>(EMPTY_ROWS);
+  const [you, setYou] = useState<Record<Tab, ApiLeaderboardEntry | null>>(EMPTY_YOU);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fetched = useRef<Set<Tab>>(new Set());
+
+  // Clear cache when a new match loads
+  useEffect(() => {
+    fetched.current.clear();
+    setRows(EMPTY_ROWS);
+    setYou(EMPTY_YOU);
+    setError(null);
+  }, [match?.id]);
+
+  const fetchTab = useCallback(async (tab: Tab) => {
+    if (fetched.current.has(tab)) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Resolve matchId from store; if missing, pull the first live match
+      let matchId = match?.id;
+      if (!matchId) {
+        const liveRes = await api.matches.live();
+        matchId = liveRes.data[0]?.matchId;
+      }
+      if (!matchId) {
+        setError('No live match · Check back during kickoff');
+        return;
+      }
+
+      let res;
+      if (tab === 'country') {
+        res = await api.leaderboard.country(matchId, user?.countryCode ?? 'BRA');
+      } else if (tab === 'city') {
+        res = await api.leaderboard.city(matchId, user?.cityCode ?? '');
+      } else {
+        res = await api.leaderboard.friends(matchId);
+      }
+
+      const { topList, you: youEntry } = res.data;
+      setRows(prev => ({ ...prev, [tab]: topList ?? [] }));
+      setYou(prev => ({ ...prev, [tab]: youEntry ?? null }));
+      fetched.current.add(tab);
+    } catch {
+      setError('Live rankings unavailable');
+    } finally {
+      setLoading(false);
+    }
+  }, [match?.id, user?.countryCode, user?.cityCode]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTab('country');
+    }, [fetchTab])
+  );
+
+  useEffect(() => {
+    fetchTab(activeTab);
+  }, [activeTab, fetchTab]);
+
+  const currentRows = rows[activeTab];
+  const currentYou = you[activeTab];
+  const youInList = currentRows.some(r => r.isYou);
+  const max = currentRows.length > 0 ? Math.max(...currentRows.map(r => r.score)) : 1;
 
   const fmt = (n: number) =>
-    n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : (n / 1000).toFixed(0) + 'K';
+    n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : (n / 1_000).toFixed(0) + 'K';
+
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    if (loading) {
+      pulse.value = withRepeat(withTiming(0.3, { duration: 700 }), -1, true);
+    } else {
+      cancelAnimation(pulse);
+      pulse.value = withTiming(1, { duration: 150 });
+    }
+  }, [loading]);
+
+  const skeletonStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
+
+  const renderRow = (r: ApiLeaderboardEntry, key: string) => {
+    const pct = max > 0 ? (r.score / max) * 100 : 0;
+    return (
+      <View
+        key={key}
+        style={{
+          padding: 10,
+          paddingHorizontal: 12,
+          borderRadius: 14,
+          backgroundColor: theme.surface,
+          borderWidth: 0.5,
+          borderColor: r.isYou ? r.color : theme.border,
+          overflow: 'hidden',
+        }}
+      >
+        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${pct}%`, backgroundColor: r.color + '20' }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 12, color: theme.textDim, width: 24, textAlign: 'center' }}>
+            {String(r.rank).padStart(2, '0')}
+          </Text>
+          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: r.color }} />
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontFamily: 'InterTight_600SemiBold', fontSize: 15, color: theme.text }}>
+                {r.name}
+              </Text>
+              {r.isYou && (
+                <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 9, color: r.color, letterSpacing: 0.5 }}>
+                  YOU
+                </Text>
+              )}
+            </View>
+            <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5, marginTop: 1 }}>
+              {r.code} · {pct.toFixed(1)}%
+            </Text>
+          </View>
+          <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 14, color: theme.text, fontVariant: ['tabular-nums'] }}>
+            {fmt(r.score)}
+          </Text>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -135,74 +234,46 @@ export default function LeaderboardScreen() {
           </View>
         </View>
 
-        {/* Rows */}
+        {/* List area */}
         <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 6 }}>
-          {rows.map((r, i) => {
-            const pct = (r.score / max) * 100;
-            return (
-              <View
-                key={r.code + i}
-                style={{
-                  padding: 10,
-                  paddingHorizontal: 12,
+          {loading && currentRows.length === 0 ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <Animated.View
+                key={i}
+                style={[skeletonStyle, {
+                  height: 56,
                   borderRadius: 14,
                   backgroundColor: theme.surface,
                   borderWidth: 0.5,
-                  borderColor: r.isYou ? r.color : theme.border,
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Background bar */}
-                <View style={{
-                  position: 'absolute',
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  width: `${pct}%`,
-                  backgroundColor: r.color + '20',
-                }} />
+                  borderColor: theme.border,
+                }]}
+              />
+            ))
+          ) : error && currentRows.length === 0 ? (
+            <View style={{ padding: 24, alignItems: 'center' }}>
+              <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 12, color: theme.textMute, letterSpacing: 0.5 }}>
+                Live rankings unavailable
+              </Text>
+            </View>
+          ) : (
+            currentRows.map((r, i) => renderRow(r, r.code + i))
+          )}
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={{
-                    fontFamily: 'JetBrainsMono_700Bold',
-                    fontSize: 12,
-                    color: theme.textDim,
-                    width: 24,
-                    textAlign: 'center',
-                  }}>
-                    {String(r.rank).padStart(2, '0')}
-                  </Text>
-                  <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: r.color }} />
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontFamily: 'InterTight_600SemiBold', fontSize: 15, color: theme.text }}>
-                        {r.name}
-                      </Text>
-                      {r.isYou && (
-                        <Text style={{
-                          fontFamily: 'JetBrainsMono_700Bold',
-                          fontSize: 9,
-                          color: r.color,
-                          letterSpacing: 0.5,
-                        }}>YOU</Text>
-                      )}
-                    </View>
-                    <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.5, marginTop: 1 }}>
-                      {r.code} · {pct.toFixed(1)}%
-                    </Text>
-                  </View>
-                  <Text style={{
-                    fontFamily: 'JetBrainsMono_700Bold',
-                    fontSize: 14,
-                    color: theme.text,
-                    fontVariant: ['tabular-nums'],
-                  }}>
-                    {fmt(r.score)}
-                  </Text>
-                </View>
+          {/* Your Position — shown only when user's rank is outside the visible list */}
+          {!loading && currentYou && !youInList && (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4, paddingHorizontal: 2 }}>
+                <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: theme.textMute, letterSpacing: 2 }}>
+                  · · ·
+                </Text>
+                <View style={{ flex: 1, height: 0.5, backgroundColor: theme.border }} />
+                <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 9, color: theme.textMute, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                  Your position
+                </Text>
               </View>
-            );
-          })}
+              {renderRow({ ...currentYou, isYou: true }, 'you-card')}
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

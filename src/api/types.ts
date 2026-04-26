@@ -85,6 +85,11 @@ export interface ApiLeaderboardEntry {
   isYou?: boolean;
 }
 
+export interface LeaderboardResponse {
+  topList: ApiLeaderboardEntry[];
+  you: ApiLeaderboardEntry | null;
+}
+
 export interface ApiHistoryEntry {
   matchId: string;
   energyContributed: number;

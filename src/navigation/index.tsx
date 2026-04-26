@@ -118,12 +118,15 @@ export default function AppNavigator() {
       }}
     >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
+        {isAuthenticated ? (
+          <>
+            <Stack.Screen name="Main"     component={MainTabs} />
+            <Stack.Screen name="Recap"    component={RecapScreen} />
+            <Stack.Screen name="MiniGame" component={MiniGameScreen} />
+          </>
+        ) : (
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        ) : null}
-        <Stack.Screen name="Main"     component={MainTabs} />
-        <Stack.Screen name="Recap"    component={RecapScreen} />
-        <Stack.Screen name="MiniGame" component={MiniGameScreen} />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

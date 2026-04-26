@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useUserStore } from '../store/userStore';
-import { mapMatch, BackendMatch } from './types';
+import { mapMatch, BackendMatch, LeaderboardResponse } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION ?? 'v1';
@@ -51,13 +51,13 @@ export const api = {
   },
   leaderboard: {
     global: (matchId: string, limit = 20) =>
-      client.get('/leaderboard/global', { params: { matchId, limit } }),
-    country: (matchId: string, countryCode: string) =>
-      client.get('/leaderboard/country', { params: { matchId, countryCode } }),
-    city: (matchId: string, cityCode: string) =>
-      client.get('/leaderboard/city', { params: { matchId, cityCode } }),
-    friends: (matchId: string) =>
-      client.get('/leaderboard/friends', { params: { matchId } }),
+      client.get<LeaderboardResponse>('/leaderboard/global', { params: { matchId, limit } }),
+    country: (matchId: string, countryCode: string, limit = 20) =>
+      client.get<LeaderboardResponse>('/leaderboard/country', { params: { matchId, countryCode, limit } }),
+    city: (matchId: string, cityCode: string, limit = 20) =>
+      client.get<LeaderboardResponse>('/leaderboard/city', { params: { matchId, cityCode, limit } }),
+    friends: (matchId: string, limit = 20) =>
+      client.get<LeaderboardResponse>('/leaderboard/friends', { params: { matchId, limit } }),
   },
   profile: {
     badges: (userId: string) => client.get(`/profile/${userId}/badges`),
