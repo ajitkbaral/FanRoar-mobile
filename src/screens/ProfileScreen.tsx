@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
 import FRCard from '../components/shared/FRCard';
 import FRChip from '../components/shared/FRChip';
 import FRIcon from '../components/shared/FRIcon';
 import { LinearGradient } from 'expo-linear-gradient';
+import { api } from '../api/client';
+import { ApiHistoryEntry } from '../api/types';
 
 const ROLE_LABELS: Record<string, string> = {
   ultra:   'Ultra Fan',
@@ -40,7 +43,7 @@ const LOCKED_PLACEHOLDERS = [
 ];
 
 export default function ProfileScreen() {
-  const { isDark, teamKey, fanRole, user, logout } = useUserStore();
+  const { isDark, teamKey, fanRole, user, userId, logout } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
   const displayName  = user?.displayName || 'Fan';
@@ -54,12 +57,22 @@ export default function ProfileScreen() {
     ? (COUNTRY_NAMES[user.countryCode] ?? user.countryCode)
     : theme.teamName;
 
+  const [matchCount, setMatchCount] = useState<number | null>(null);
+
+  useFocusEffect(useCallback(() => {
+    if (!userId) return;
+    api.profile.history(userId).then((res) => {
+      const history = res.data as ApiHistoryEntry[];
+      setMatchCount(history.length);
+    }).catch(() => {});
+  }, [userId]));
+
   const lockedSlots = LOCKED_PLACEHOLDERS.slice(0, Math.max(0, 6 - badges.length));
 
   const stats = [
-    { v: fmtNumber(xp),        l: 'Energy' },
-    { v: '–',                   l: 'Matches' },
-    { v: String(badges.length), l: 'Badges' },
+    { v: fmtNumber(xp),                                          l: 'XP' },
+    { v: matchCount !== null ? String(matchCount) : '–',         l: 'Matches' },
+    { v: String(badges.length),                                   l: 'Badges' },
   ];
 
   return (
