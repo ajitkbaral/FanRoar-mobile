@@ -13,6 +13,13 @@ const ROLE_LABELS: Record<string, string> = {
   chanter: 'Chanter',
 };
 
+const COUNTRY_NAMES: Record<string, string> = {
+  BR: 'Brazil',        AR: 'Argentina', US: 'United States',
+  GB: 'United Kingdom', IN: 'India',   DE: 'Germany',
+  FR: 'France',        ES: 'Spain',    MX: 'Mexico',
+  JP: 'Japan',
+};
+
 function fmtNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
@@ -42,7 +49,10 @@ export default function ProfileScreen() {
   const badges       = user?.badges ?? [];
   const nextLevelXp  = level * 1000;
   const xpProgress   = Math.min(xp / nextLevelXp, 1);
-  const roleLabel    = ROLE_LABELS[fanRole] ?? fanRole;
+  const roleLabel      = ROLE_LABELS[fanRole] ?? fanRole;
+  const countryDisplay = user?.countryCode
+    ? (COUNTRY_NAMES[user.countryCode] ?? user.countryCode)
+    : theme.teamName;
 
   const lockedSlots = LOCKED_PLACEHOLDERS.slice(0, Math.max(0, 6 - badges.length));
 
@@ -91,7 +101,7 @@ export default function ProfileScreen() {
               {displayName}
             </Text>
             <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-              <FRChip theme={theme} color={theme.accent} filled>{theme.teamName}</FRChip>
+              <FRChip theme={theme} color={theme.accent} filled>{countryDisplay}</FRChip>
               <FRChip theme={theme} color={theme.text}>{roleLabel}</FRChip>
             </View>
           </View>
