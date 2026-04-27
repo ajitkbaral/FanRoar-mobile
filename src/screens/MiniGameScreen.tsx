@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
+import { useMatchStore } from '../store/matchStore';
 import FRIcon from '../components/shared/FRIcon';
 import PenaltyShootout from '../components/MiniGame/PenaltyShootout';
 import ReactionChallenge from '../components/MiniGame/ReactionChallenge';
@@ -29,7 +30,12 @@ const GAMES: Game[] = [
 export default function MiniGameScreen() {
   const { isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
+  const { completedMiniGames, completeMiniGame } = useMatchStore();
   const [activeGame, setActiveGame] = useState<GameKey | null>(null);
+
+  const openGame = useCallback((key: GameKey) => {
+    if (!completedMiniGames.includes(key)) setActiveGame(key);
+  }, [completedMiniGames]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -49,7 +55,7 @@ export default function MiniGameScreen() {
             HALF-TIME · 00:14:32
           </Text>
           <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 11, color: theme.accent, letterSpacing: 0.5 }}>
-            {GAMES.length} GAMES
+            {GAMES.length - completedMiniGames.length} LEFT
           </Text>
         </View>
 
@@ -66,7 +72,13 @@ export default function MiniGameScreen() {
         {/* Game cards */}
         <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 12 }}>
           {GAMES.map((g) => (
-            <GameCard key={g.key} theme={theme} game={g} onPress={() => setActiveGame(g.key)} />
+            <GameCard
+              key={g.key}
+              theme={theme}
+              game={g}
+              completed={completedMiniGames.includes(g.key)}
+              onPress={() => openGame(g.key)}
+            />
           ))}
         </View>
 
@@ -93,16 +105,28 @@ export default function MiniGameScreen() {
 
       {/* Game modals */}
       <Modal visible={activeGame === 'penalty'} animationType="slide" statusBarTranslucent>
-        <PenaltyShootout onClose={() => setActiveGame(null)} />
+        <PenaltyShootout
+          onClose={() => setActiveGame(null)}
+          onComplete={() => completeMiniGame('penalty')}
+        />
       </Modal>
       <Modal visible={activeGame === 'reaction'} animationType="slide" statusBarTranslucent>
-        <ReactionChallenge onClose={() => setActiveGame(null)} />
+        <ReactionChallenge
+          onClose={() => setActiveGame(null)}
+          onComplete={() => completeMiniGame('reaction')}
+        />
       </Modal>
       <Modal visible={activeGame === 'hottake'} animationType="slide" statusBarTranslucent>
-        <HotTakePoll onClose={() => setActiveGame(null)} />
+        <HotTakePoll
+          onClose={() => setActiveGame(null)}
+          onComplete={() => completeMiniGame('hottake')}
+        />
       </Modal>
       <Modal visible={activeGame === 'hype'} animationType="slide" statusBarTranslucent>
-        <HypeBomb onClose={() => setActiveGame(null)} />
+        <HypeBomb
+          onClose={() => setActiveGame(null)}
+          onComplete={() => completeMiniGame('hype')}
+        />
       </Modal>
     </SafeAreaView>
   );
@@ -111,15 +135,17 @@ export default function MiniGameScreen() {
 function GameCard({
   theme,
   game,
+  completed,
   onPress,
 }: {
   theme: ReturnType<typeof buildTheme>;
   game: Game;
+  completed: boolean;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
+      activeOpacity={completed ? 1 : 0.85}
       onPress={onPress}
       style={{
         padding: 14,
@@ -128,9 +154,11 @@ function GameCard({
         borderWidth: 0.5,
         borderColor: game.featured ? theme.accent : theme.border,
         overflow: 'hidden',
+        opacity: completed ? 0.5 : 1,
       }}
     >
-      {game.featured && (
+      {/* FEATURED badge (only when not completed) */}
+      {game.featured && !completed && (
         <View style={{
           position: 'absolute',
           top: 14,
@@ -142,6 +170,23 @@ function GameCard({
         }}>
           <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 9, color: theme.accent, letterSpacing: 1 }}>
             FEATURED
+          </Text>
+        </View>
+      )}
+
+      {/* PLAYED badge */}
+      {completed && (
+        <View style={{
+          position: 'absolute',
+          top: 14,
+          right: 14,
+          paddingHorizontal: 8,
+          paddingVertical: 3,
+          borderRadius: 999,
+          backgroundColor: game.featured ? theme.bg : theme.surface2,
+        }}>
+          <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 9, color: game.featured ? theme.accent : theme.textMute, letterSpacing: 1 }}>
+            PLAYED
           </Text>
         </View>
       )}
@@ -195,7 +240,11 @@ function GameCard({
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <FRIcon name="play" size={14} color={game.featured ? theme.accent : theme.text} />
+          <FRIcon
+            name={completed ? 'check' : 'play'}
+            size={14}
+            color={game.featured ? theme.accent : theme.text}
+          />
         </View>
       </View>
     </TouchableOpacity>

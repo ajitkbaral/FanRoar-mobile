@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -31,16 +31,20 @@ type Phase = 'swiping' | 'revealing' | 'done';
 
 interface Props {
   onClose: () => void;
+  onComplete?: () => void;
 }
 
-export default function HotTakePoll({ onClose }: Props) {
+export default function HotTakePoll({ onClose, onComplete }: Props) {
   const { isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('swiping');
-  const [votes, setVotes] = useState<Vote[]>([]);
   const [currentVote, setCurrentVote] = useState<Vote | null>(null);
+
+  useEffect(() => {
+    if (phase === 'done') onComplete?.();
+  }, [phase]);
 
   const indexRef = useRef(0);
   const phaseRef = useRef<Phase>('swiping');
@@ -57,7 +61,6 @@ export default function HotTakePoll({ onClose }: Props) {
   const revealAndAdvance = useCallback((vote: Vote) => {
     setCurrentVote(vote);
     votesRef.current = [...votesRef.current, vote];
-    setVotes([...votesRef.current]);
     cardX.setValue(0); // snap card back to centre before showing crowd result
     setPhaseSync('revealing');
 

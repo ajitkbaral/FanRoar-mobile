@@ -21,9 +21,10 @@ type Phase = 'waiting' | 'ready' | 'hit' | 'miss' | 'done';
 
 interface Props {
   onClose: () => void;
+  onComplete?: () => void;
 }
 
-export default function ReactionChallenge({ onClose }: Props) {
+export default function ReactionChallenge({ onClose, onComplete }: Props) {
   const { isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
@@ -31,7 +32,10 @@ export default function ReactionChallenge({ onClose }: Props) {
   const [phase, setPhase] = useState<Phase>('waiting');
   const [ballPos, setBallPos] = useState({ x: 0, y: 0 });
   const [lastMs, setLastMs] = useState<number | null>(null);
-  const [reactions, setReactions] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (phase === 'done') onComplete?.();
+  }, [phase]);
 
   const phaseRef = useRef<Phase>('waiting');
   const roundRef = useRef(1);
@@ -77,7 +81,6 @@ export default function ReactionChallenge({ onClose }: Props) {
     setLastMs(ms);
 
     reactionsRef.current = [...reactionsRef.current, ms];
-    setReactions([...reactionsRef.current]);
 
     if (hit) {
       setPhaseSync('hit');

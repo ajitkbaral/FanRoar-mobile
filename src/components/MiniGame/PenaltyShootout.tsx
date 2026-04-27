@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -57,9 +57,10 @@ function zoneTarget(zone: Zone): { x: number; y: number } {
 
 interface Props {
   onClose: () => void;
+  onComplete?: () => void;
 }
 
-export default function PenaltyShootout({ onClose }: Props) {
+export default function PenaltyShootout({ onClose, onComplete }: Props) {
   const { isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
@@ -67,6 +68,10 @@ export default function PenaltyShootout({ onClose }: Props) {
   const [scored, setScored] = useState(0);
   const [phase, setPhase] = useState<Phase>('aim');
   const [isGoal, setIsGoal] = useState(false);
+
+  useEffect(() => {
+    if (phase === 'done') onComplete?.();
+  }, [phase]);
 
   const phaseRef = useRef<Phase>('aim');
   const shotsRef = useRef(0);

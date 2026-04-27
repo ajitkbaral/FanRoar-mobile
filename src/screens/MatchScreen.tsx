@@ -52,7 +52,8 @@ export default function MatchScreen() {
 
   const { isDark, teamKey, fanRole } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const {
     match,
@@ -117,7 +118,10 @@ export default function MatchScreen() {
       .finally(() => setMatchLoading(false));
   }, [matchId]);
 
-  const { emitEnergy: socketEmit, leaveRoom } = useMatchSocket(matchId, supportingTeamId);
+  const { emitEnergy: socketEmit, leaveRoom } = useMatchSocket(
+    matchId,
+    supportingTeamId,
+  );
 
   const handleLeave = useCallback(() => {
     leaveRoom();
@@ -181,12 +185,22 @@ export default function MatchScreen() {
   const teamACode = match?.teamA.code ?? theme.teamCode;
   const teamAName = match?.teamA.name ?? theme.teamName;
   const teamAColor = TEAM_COLORS[teamACode] ?? theme.accent;
-  const teamA = { code: teamACode, color: teamAColor, name: teamAName, flagUrl: match?.teamA.flagUrl };
+  const teamA = {
+    code: teamACode,
+    color: teamAColor,
+    name: teamAName,
+    flagUrl: match?.teamA.flagUrl,
+  };
 
   const teamBCode = match?.teamB.code ?? "OPP";
   const teamBName = match?.teamB.name ?? "Opponent";
   const teamBColor = TEAM_COLORS[teamBCode] ?? theme.surface2;
-  const teamB = { code: teamBCode, color: teamBColor, name: teamBName, flagUrl: match?.teamB.flagUrl };
+  const teamB = {
+    code: teamBCode,
+    color: teamBColor,
+    name: teamBName,
+    flagUrl: match?.teamB.flagUrl,
+  };
 
   const stageLabel = match?.stage?.toUpperCase() ?? "—";
   const statusLabel = matchStatusLabel(match?.status ?? "live", match?.minute);
@@ -215,7 +229,7 @@ export default function MatchScreen() {
         icon: "fire",
       },
       halftime: {
-        label: "HALF-TIME · MINI-GAMES OPEN",
+        label: "HALF-TIME · OPEN MINI-GAMES",
         color: theme.warning,
         icon: "sparkle",
       },
@@ -261,7 +275,9 @@ export default function MatchScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {(match?.status === "live" || match?.status === "halftime") && <FRLiveDot color="#ff3b30" />}
+            {(match?.status === "live" || match?.status === "halftime") && (
+              <FRLiveDot color="#ff3b30" />
+            )}
             <Text
               style={{
                 fontFamily: "JetBrainsMono_400Regular",
@@ -271,7 +287,8 @@ export default function MatchScreen() {
                 textTransform: "uppercase",
               }}
             >
-              {statusLabel}{stageLabel ? ` · ${stageLabel}` : ""}
+              {statusLabel}
+              {stageLabel ? ` · ${stageLabel}` : ""}
             </Text>
           </View>
           {match ? (
@@ -408,7 +425,11 @@ export default function MatchScreen() {
         {match?.status === "finished" && matchId ? (
           <EventBanner
             theme={theme}
-            config={{ label: "FULL TIME · VIEW YOUR RECAP", color: theme.accent, icon: "trophy" }}
+            config={{
+              label: "FULL TIME · VIEW YOUR RECAP",
+              color: theme.accent,
+              icon: "trophy",
+            }}
             onPress={() => navigation.navigate("Recap", { matchId })}
           />
         ) : (
@@ -463,7 +484,6 @@ export default function MatchScreen() {
           role={fanRole as FanRole}
           onActivate={handlePowerup}
         />
-
       </ScrollView>
 
       {/* Team picker overlay — blocks interaction until a team is chosen */}
@@ -527,7 +547,14 @@ function ScoreSide({
             resizeMode="cover"
           />
         ) : (
-          <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: team.color }} />
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              backgroundColor: team.color,
+            }}
+          />
         )}
       </View>
       <View style={{ alignItems: "flex-start" }}>
@@ -654,7 +681,14 @@ function TeamPicker({
                     resizeMode="cover"
                   />
                 ) : (
-                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: team.color }} />
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor: team.color,
+                    }}
+                  />
                 )}
               </View>
               <View style={{ flex: 1 }}>
@@ -681,7 +715,12 @@ function TeamPicker({
                 </Text>
               </View>
               {selected ? (
-                <FRIcon name="check" size={20} color="#E8C429" strokeWidth={2.5} />
+                <FRIcon
+                  name="check"
+                  size={20}
+                  color="#E8C429"
+                  strokeWidth={2.5}
+                />
               ) : (
                 <FRIcon name="chevron-right" size={18} color={theme.textMute} />
               )}

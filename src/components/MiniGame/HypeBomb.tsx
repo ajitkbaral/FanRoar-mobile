@@ -23,9 +23,10 @@ type Phase = 'countdown' | 'active' | 'done';
 
 interface Props {
   onClose: () => void;
+  onComplete?: () => void;
 }
 
-export default function HypeBomb({ onClose }: Props) {
+export default function HypeBomb({ onClose, onComplete }: Props) {
   const { isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
 
@@ -36,6 +37,10 @@ export default function HypeBomb({ onClose }: Props) {
 
   const phaseRef = useRef<Phase>('countdown');
   const shakeCountRef = useRef(0);
+
+  useEffect(() => {
+    if (phase === 'done') onComplete?.();
+  }, [phase]);
 
   const countdownScale = useRef(new Animated.Value(0)).current;
   const ringPulse = useRef(new Animated.Value(1)).current;

@@ -32,6 +32,7 @@ interface MatchState {
   matchEvents: MatchEvent[];
   fanCount: number;
   supportingTeamId: string | null;
+  completedMiniGames: string[];
 
   setMatch: (match: Match) => void;
   setMatchStatus: (status: Match['status']) => void;
@@ -41,6 +42,7 @@ interface MatchState {
   addMatchEvent: (event: Omit<MatchEvent, 'timestamp'>) => void;
   setFanCount: (count: number) => void;
   setSupportingTeamId: (id: string | null) => void;
+  completeMiniGame: (key: string) => void;
   resetMatch: () => void;
 }
 
@@ -53,6 +55,7 @@ export const useMatchStore = create<MatchState>((set) => ({
   matchEvents: [],
   fanCount: 0,
   supportingTeamId: null,
+  completedMiniGames: [],
 
   setMatch: (match) => set((s) => {
     const sameMatch = s.match?.id === match.id;
@@ -63,6 +66,7 @@ export const useMatchStore = create<MatchState>((set) => ({
       momentum: sameMatch ? s.momentum : 50,
       eventMode: sameMatch ? s.eventMode : 'normal',
       supportingTeamId: sameMatch ? s.supportingTeamId : null,
+      completedMiniGames: sameMatch ? s.completedMiniGames : [],
     };
   }),
   setMatchStatus: (status) => set((s) => ({ match: s.match ? { ...s.match, status } : null })),
@@ -76,7 +80,10 @@ export const useMatchStore = create<MatchState>((set) => ({
   })),
   setFanCount: (fanCount) => set({ fanCount }),
   setSupportingTeamId: (supportingTeamId) => set({ supportingTeamId }),
+  completeMiniGame: (key) => set((s) => ({
+    completedMiniGames: s.completedMiniGames.includes(key) ? s.completedMiniGames : [...s.completedMiniGames, key],
+  })),
   resetMatch: () => set({
-    match: null, scoreA: 0, scoreB: 0, momentum: 50, eventMode: 'normal', matchEvents: [], fanCount: 0, supportingTeamId: null,
+    match: null, scoreA: 0, scoreB: 0, momentum: 50, eventMode: 'normal', matchEvents: [], fanCount: 0, supportingTeamId: null, completedMiniGames: [],
   }),
 }));
