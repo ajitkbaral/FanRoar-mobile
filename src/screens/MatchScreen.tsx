@@ -276,7 +276,7 @@ export default function MatchScreen() {
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {(match?.status === "live" || match?.status === "halftime") && (
-              <FRLiveDot color="#ff3b30" />
+              <FRLiveDot color={theme.success} />
             )}
             <Text
               style={{

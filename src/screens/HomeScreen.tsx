@@ -159,12 +159,12 @@ export default function HomeScreen() {
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
             >
-              <FRLiveDot color={theme.danger} />
+              <FRLiveDot color={theme.success} />
               <Text
                 style={{
                   fontFamily: "JetBrainsMono_700Bold",
                   fontSize: 11,
-                  color: theme.danger,
+                  color: theme.success,
                   letterSpacing: 0.5,
                 }}
               >
@@ -296,12 +296,12 @@ export default function HomeScreen() {
                         marginBottom: 6,
                       }}
                     >
-                      <FRLiveDot color={theme.danger} />
+                      <FRLiveDot color={theme.success} />
                       <Text
                         style={{
                           fontFamily: "JetBrainsMono_700Bold",
                           fontSize: 10,
-                          color: theme.danger,
+                          color: theme.success,
                           letterSpacing: 0.8,
                         }}
                       >
