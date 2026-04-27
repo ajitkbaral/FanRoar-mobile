@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
@@ -58,14 +58,26 @@ export default function ProfileScreen() {
     : theme.teamName;
 
   const [matchCount, setMatchCount] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(useCallback(() => {
+  const loadData = useCallback(() => {
     if (!userId) return;
     api.profile.history(userId).then((res) => {
       const history = res.data as ApiHistoryEntry[];
       setMatchCount(history.length);
     }).catch(() => {});
-  }, [userId]));
+  }, [userId]);
+
+  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+
+  const onRefresh = useCallback(() => {
+    if (!userId) return;
+    setRefreshing(true);
+    api.profile.history(userId).then((res) => {
+      const history = res.data as ApiHistoryEntry[];
+      setMatchCount(history.length);
+    }).catch(() => {}).finally(() => setRefreshing(false));
+  }, [userId]);
 
   const lockedSlots = LOCKED_PLACEHOLDERS.slice(0, Math.max(0, 6 - badges.length));
 
@@ -81,6 +93,13 @@ export default function ProfileScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.accent}
+          />
+        }
       >
         {/* Top row */}
         <View style={{
