@@ -1,10 +1,17 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
 import FRIcon from '../components/shared/FRIcon';
+import PenaltyShootout from '../components/MiniGame/PenaltyShootout';
+import ReactionChallenge from '../components/MiniGame/ReactionChallenge';
+import HotTakePoll from '../components/MiniGame/HotTakePoll';
+import HypeBomb from '../components/MiniGame/HypeBomb';
+
+type GameKey = 'penalty' | 'reaction' | 'hottake' | 'hype';
 
 interface Game {
+  key: GameKey;
   title: string;
   sub: string;
   reward: string;
@@ -13,14 +20,16 @@ interface Game {
 }
 
 const GAMES: Game[] = [
-  { title: 'Penalty Shootout', sub: 'Swipe-based reflex · 30s rounds',       reward: '+250 XP',    featured: true, icon: 'bolt' },
-  { title: 'Match Trivia',     sub: '5 questions about today\'s match',       reward: '+180 XP',    icon: 'sparkle' },
-  { title: 'Reaction Challenge',sub: 'Tap at the perfect moment',             reward: '+1 power-up', icon: 'lightning' },
+  { key: 'penalty',  title: 'Penalty Shootout',   sub: 'Swipe to aim · 5 shots',           reward: '+250 XP',      featured: true, icon: 'bolt'      },
+  { key: 'hottake',  title: 'Hot Takes',           sub: 'Swipe your verdict on 5 takes',    reward: '+120 XP',                      icon: 'fire'      },
+  { key: 'reaction', title: 'Reaction Challenge',  sub: 'Tap the ball before it vanishes',  reward: '+200 XP',                      icon: 'lightning' },
+  { key: 'hype',     title: 'Hype Bomb',           sub: 'Shake hard · 30s window',          reward: '+1 Mega Cheer',                icon: 'drum'      },
 ];
 
 export default function MiniGameScreen() {
   const { isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
+  const [activeGame, setActiveGame] = useState<GameKey | null>(null);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -40,7 +49,7 @@ export default function MiniGameScreen() {
             HALF-TIME · 00:14:32
           </Text>
           <Text style={{ fontFamily: 'JetBrainsMono_700Bold', fontSize: 11, color: theme.accent, letterSpacing: 0.5 }}>
-            3 GAMES
+            {GAMES.length} GAMES
           </Text>
         </View>
 
@@ -56,8 +65,8 @@ export default function MiniGameScreen() {
 
         {/* Game cards */}
         <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 12 }}>
-          {GAMES.map((g, i) => (
-            <GameCard key={i} theme={theme} game={g} />
+          {GAMES.map((g) => (
+            <GameCard key={g.key} theme={theme} game={g} onPress={() => setActiveGame(g.key)} />
           ))}
         </View>
 
@@ -81,14 +90,37 @@ export default function MiniGameScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Game modals */}
+      <Modal visible={activeGame === 'penalty'} animationType="slide" statusBarTranslucent>
+        <PenaltyShootout onClose={() => setActiveGame(null)} />
+      </Modal>
+      <Modal visible={activeGame === 'reaction'} animationType="slide" statusBarTranslucent>
+        <ReactionChallenge onClose={() => setActiveGame(null)} />
+      </Modal>
+      <Modal visible={activeGame === 'hottake'} animationType="slide" statusBarTranslucent>
+        <HotTakePoll onClose={() => setActiveGame(null)} />
+      </Modal>
+      <Modal visible={activeGame === 'hype'} animationType="slide" statusBarTranslucent>
+        <HypeBomb onClose={() => setActiveGame(null)} />
+      </Modal>
     </SafeAreaView>
   );
 }
 
-function GameCard({ theme, game }: { theme: ReturnType<typeof buildTheme>; game: Game }) {
+function GameCard({
+  theme,
+  game,
+  onPress,
+}: {
+  theme: ReturnType<typeof buildTheme>;
+  game: Game;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity
       activeOpacity={0.85}
+      onPress={onPress}
       style={{
         padding: 14,
         borderRadius: 18,
