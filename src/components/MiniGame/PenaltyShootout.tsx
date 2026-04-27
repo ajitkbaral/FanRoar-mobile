@@ -57,7 +57,7 @@ function zoneTarget(zone: Zone): { x: number; y: number } {
 
 interface Props {
   onClose: () => void;
-  onComplete?: () => void;
+  onComplete?: (gameState: { shotsScored: number }) => void;
 }
 
 export default function PenaltyShootout({ onClose, onComplete }: Props) {
@@ -70,7 +70,7 @@ export default function PenaltyShootout({ onClose, onComplete }: Props) {
   const [isGoal, setIsGoal] = useState(false);
 
   useEffect(() => {
-    if (phase === 'done') onComplete?.();
+    if (phase === 'done') onComplete?.({ shotsScored: scoredRef.current });
   }, [phase]);
 
   const phaseRef = useRef<Phase>('aim');

@@ -7,6 +7,7 @@ import { useUserStore } from '../store/userStore';
 import { buildTheme } from '../theme';
 import { api } from '../api/client';
 import FRTabBar from '../components/shared/FRTabBar';
+import LevelUpModal from '../components/shared/LevelUpModal';
 
 // Screens
 import OnboardingScreen from '../screens/OnboardingScreen';
@@ -128,6 +129,7 @@ export default function AppNavigator() {
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         )}
       </Stack.Navigator>
+      <LevelUpModal />
     </NavigationContainer>
   );
 }

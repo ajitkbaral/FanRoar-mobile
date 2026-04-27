@@ -31,7 +31,7 @@ type Phase = 'swiping' | 'revealing' | 'done';
 
 interface Props {
   onClose: () => void;
-  onComplete?: () => void;
+  onComplete?: (gameState: { votesSubmitted: number }) => void;
 }
 
 export default function HotTakePoll({ onClose, onComplete }: Props) {
@@ -43,7 +43,7 @@ export default function HotTakePoll({ onClose, onComplete }: Props) {
   const [currentVote, setCurrentVote] = useState<Vote | null>(null);
 
   useEffect(() => {
-    if (phase === 'done') onComplete?.();
+    if (phase === 'done') onComplete?.({ votesSubmitted: votesRef.current.length });
   }, [phase]);
 
   const indexRef = useRef(0);

@@ -23,7 +23,7 @@ type Phase = 'countdown' | 'active' | 'done';
 
 interface Props {
   onClose: () => void;
-  onComplete?: () => void;
+  onComplete?: (gameState: { shakeCount: number }) => void;
 }
 
 export default function HypeBomb({ onClose, onComplete }: Props) {
@@ -39,7 +39,7 @@ export default function HypeBomb({ onClose, onComplete }: Props) {
   const shakeCountRef = useRef(0);
 
   useEffect(() => {
-    if (phase === 'done') onComplete?.();
+    if (phase === 'done') onComplete?.({ shakeCount: shakeCountRef.current });
   }, [phase]);
 
   const countdownScale = useRef(new Animated.Value(0)).current;

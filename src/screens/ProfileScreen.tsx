@@ -50,7 +50,7 @@ export default function ProfileScreen() {
   const level        = user?.level ?? 1;
   const xp           = user?.xp ?? 0;
   const badges       = user?.badges ?? [];
-  const nextLevelXp  = level * 1000;
+  const nextLevelXp  = user?.xpToNextLevel ?? level * 1000;
   const xpProgress   = Math.min(xp / nextLevelXp, 1);
   const roleLabel      = ROLE_LABELS[fanRole] ?? fanRole;
   const countryDisplay = user?.countryCode

@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FanRole } from '../utils/constants';
 import { TeamKey } from '../theme';
+import { XpUpdatePayload } from '../api/types';
 
 interface Badge {
   id: string;
@@ -21,6 +22,7 @@ interface UserProfile {
   teamKey: TeamKey;
   xp: number;
   level: number;
+  xpToNextLevel: number;
   badges: Badge[];
   countryCode: string;
   cityCode: string;
@@ -38,6 +40,8 @@ interface UserState {
   displayName: string;
   phone: string;
   _hasHydrated: boolean;
+  pendingLevelUp: boolean;
+  pendingLevelUpLevel: number;
 
   setToken: (token: string) => void;
   setUser: (user: UserProfile) => void;
@@ -49,6 +53,8 @@ interface UserState {
   setPhone: (phone: string) => void;
   setHasHydrated: (v: boolean) => void;
   logout: () => void;
+  applyXpUpdate: (update: XpUpdatePayload) => void;
+  clearLevelUp: () => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -65,6 +71,8 @@ export const useUserStore = create<UserState>()(
       displayName: '',
       phone: '',
       _hasHydrated: false,
+      pendingLevelUp: false,
+      pendingLevelUpLevel: 1,
 
       setToken: (token) => set({ token }),
       setUser: (user) => set({
@@ -90,6 +98,12 @@ export const useUserStore = create<UserState>()(
         phone: '',
         hasCompletedOnboarding: false,
       }),
+      applyXpUpdate: (update) => set((s) => ({
+        user: s.user ? { ...s.user, xp: update.xpInBand, level: update.level } : s.user,
+        pendingLevelUp: update.leveledUp ? true : s.pendingLevelUp,
+        pendingLevelUpLevel: update.leveledUp ? update.level : s.pendingLevelUpLevel,
+      })),
+      clearLevelUp: () => set({ pendingLevelUp: false }),
     }),
     {
       name: 'fanroar-user',

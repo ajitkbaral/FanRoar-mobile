@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { getSocket } from "../api/socket";
-import { mapMatchStatus } from "../api/types";
+import { mapMatchStatus, XpUpdatePayload } from "../api/types";
 import { useMatchStore } from "../store/matchStore";
 import { useUserStore } from "../store/userStore";
 
@@ -90,6 +90,11 @@ export function useMatchSocket(
       },
     );
 
+    socket.on("xp_update", (data: XpUpdatePayload) => {
+      LOG("xp_update", data);
+      useUserStore.getState().applyXpUpdate(data);
+    });
+
     socket.on("disconnect", (reason) => {
       LOG("disconnected — reason:", reason);
       const delay = Math.min(
@@ -123,6 +128,7 @@ export function useMatchSocket(
       socket.off("match_event");
       socket.off("match_status");
       socket.off("boost_activated");
+      socket.off("xp_update");
       socket.off("disconnect");
       socket.off("connect_error");
       sub.remove();

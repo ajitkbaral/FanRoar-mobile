@@ -60,11 +60,28 @@ export interface ApiUser {
   phone: string;
   fanRole: string;
   teamKey: string;
-  xp: number;
+  xp: number;           // XP within the current level band (for progress bar)
+  totalXp: number;      // lifetime cumulative XP
   level: number;
+  xpToNextLevel: number;
   badges: ApiBadge[];
   countryCode: string;
   cityCode: string;
+}
+
+export interface XpUpdatePayload {
+  xpAwarded: number;
+  totalXp: number;
+  level: number;
+  leveledUp: boolean;
+  xpInBand: number;
+  xpToNextLevel: number;
+}
+
+export interface MiniGameSubmitRequest {
+  matchId: string;
+  gameType: 'penalty' | 'reaction' | 'hottake' | 'hype';
+  gameState: Record<string, unknown>;
 }
 
 export interface ApiBadge {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useUserStore } from '../store/userStore';
-import { mapMatch, BackendMatch, LeaderboardResponse, type ApiRecap } from './types';
+import { mapMatch, BackendMatch, LeaderboardResponse, type ApiRecap, type MiniGameSubmitRequest, type XpUpdatePayload } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION ?? 'v1';
@@ -65,6 +65,10 @@ export const api = {
     history: (userId: string) => client.get(`/profile/${userId}/history`),
     recap: (userId: string, matchId: string) =>
       client.get<ApiRecap>(`/profile/${userId}/recap/${matchId}`),
+  },
+  miniGames: {
+    submit: (data: MiniGameSubmitRequest) =>
+      client.post<XpUpdatePayload>('/mini-games/submit', data),
   },
 };
 

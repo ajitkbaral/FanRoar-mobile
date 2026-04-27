@@ -21,7 +21,7 @@ type Phase = 'waiting' | 'ready' | 'hit' | 'miss' | 'done';
 
 interface Props {
   onClose: () => void;
-  onComplete?: () => void;
+  onComplete?: (gameState: { hitsMs: number[] }) => void;
 }
 
 export default function ReactionChallenge({ onClose, onComplete }: Props) {
@@ -34,7 +34,7 @@ export default function ReactionChallenge({ onClose, onComplete }: Props) {
   const [lastMs, setLastMs] = useState<number | null>(null);
 
   useEffect(() => {
-    if (phase === 'done') onComplete?.();
+    if (phase === 'done') onComplete?.({ hitsMs: reactionsRef.current });
   }, [phase]);
 
   const phaseRef = useRef<Phase>('waiting');

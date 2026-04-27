@@ -8,6 +8,8 @@ import PenaltyShootout from '../components/MiniGame/PenaltyShootout';
 import ReactionChallenge from '../components/MiniGame/ReactionChallenge';
 import HotTakePoll from '../components/MiniGame/HotTakePoll';
 import HypeBomb from '../components/MiniGame/HypeBomb';
+import XpFloater from '../components/shared/XpFloater';
+import { api } from '../api/client';
 
 type GameKey = 'penalty' | 'reaction' | 'hottake' | 'hype';
 
@@ -30,15 +32,35 @@ const GAMES: Game[] = [
 export default function MiniGameScreen() {
   const { isDark, teamKey } = useUserStore();
   const theme = buildTheme(isDark, teamKey);
-  const { completedMiniGames, completeMiniGame } = useMatchStore();
+  const { completedMiniGames, completeMiniGame, match } = useMatchStore();
+  const { applyXpUpdate } = useUserStore();
   const [activeGame, setActiveGame] = useState<GameKey | null>(null);
+  const [lastXpGain, setLastXpGain] = useState<number | null>(null);
 
   const openGame = useCallback((key: GameKey) => {
     if (!completedMiniGames.includes(key)) setActiveGame(key);
   }, [completedMiniGames]);
 
+  const handleMiniGameComplete = useCallback(async (key: GameKey, gameState: Record<string, unknown>) => {
+    completeMiniGame(key);
+    setActiveGame(null);
+    try {
+      const res = await api.miniGames.submit({
+        matchId: match?.id ?? '',
+        gameType: key,
+        gameState,
+      });
+      applyXpUpdate(res.data);
+      setLastXpGain(res.data.xpAwarded);
+    } catch {
+      // Silent fail — XP may still arrive via xp_update socket event
+    }
+  }, [completedMiniGames, match, applyXpUpdate]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      <XpFloater amount={lastXpGain} onDone={() => setLastXpGain(null)} />
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -107,25 +129,25 @@ export default function MiniGameScreen() {
       <Modal visible={activeGame === 'penalty'} animationType="slide" statusBarTranslucent>
         <PenaltyShootout
           onClose={() => setActiveGame(null)}
-          onComplete={() => completeMiniGame('penalty')}
+          onComplete={(gs) => handleMiniGameComplete('penalty', gs)}
         />
       </Modal>
       <Modal visible={activeGame === 'reaction'} animationType="slide" statusBarTranslucent>
         <ReactionChallenge
           onClose={() => setActiveGame(null)}
-          onComplete={() => completeMiniGame('reaction')}
+          onComplete={(gs) => handleMiniGameComplete('reaction', gs)}
         />
       </Modal>
       <Modal visible={activeGame === 'hottake'} animationType="slide" statusBarTranslucent>
         <HotTakePoll
           onClose={() => setActiveGame(null)}
-          onComplete={() => completeMiniGame('hottake')}
+          onComplete={(gs) => handleMiniGameComplete('hottake', gs)}
         />
       </Modal>
       <Modal visible={activeGame === 'hype'} animationType="slide" statusBarTranslucent>
         <HypeBomb
           onClose={() => setActiveGame(null)}
-          onComplete={() => completeMiniGame('hype')}
+          onComplete={(gs) => handleMiniGameComplete('hype', gs)}
         />
       </Modal>
     </SafeAreaView>
