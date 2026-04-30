@@ -109,7 +109,7 @@ export default function MatchScreen() {
           minute: m.minute,
           stage: m.stage,
         });
-        if (m.scores) setScores(m.scores.teamA, m.scores.teamB);
+        setScores(m.scores.teamA, m.scores.teamB);
         if (m.momentumRatio != null)
           setMomentum(Math.round(m.momentumRatio * 100));
         if (!supportingTeamId) setPickerVisible(true);

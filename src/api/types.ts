@@ -5,7 +5,7 @@ export interface ApiMatch {
   status: 'live' | 'halftime' | 'upcoming' | 'finished';
   kickoffTime: string;
   stage: string;
-  scores?: { teamA: number; teamB: number };
+  scores: { teamA: number; teamB: number };
   momentumRatio?: number;
   minute?: number;
 }
@@ -31,6 +31,8 @@ export interface BackendMatch {
   status: string;
   startTime: string;
   sport: string;
+  scoreA?: number;
+  scoreB?: number;
   matchTotals?: _BackendMatchTotal[];
 }
 
@@ -50,6 +52,7 @@ export function mapMatch(m: BackendMatch): ApiMatch {
     status: mapMatchStatus(m.status),
     kickoffTime: m.startTime,
     stage: m.sport,
+    scores: { teamA: m.scoreA ?? 0, teamB: m.scoreB ?? 0 },
     momentumRatio: teamATotal?.momentumRatio,
   };
 }

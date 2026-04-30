@@ -13,20 +13,15 @@ export function useMatchSocket(
 ) {
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
-  const { setMomentum, setEventMode, addMatchEvent, setMatchStatus } =
+  const { setMomentum, setScores, setEventMode, addMatchEvent, setMatchStatus } =
     useMatchStore();
   const { userId, user } = useUserStore();
 
   const resolvedUserId = userId ?? user?.id ?? null;
 
   const joinRoom = useCallback(() => {
-    // Wait until match, team, and user are all known before joining
-    if (!matchId || !teamId || !resolvedUserId) {
-      LOG("join_match skipped — missing", {
-        matchId,
-        teamId,
-        userId: resolvedUserId,
-      });
+    if (!matchId) {
+      LOG("join_match skipped — no matchId");
       return;
     }
     const socket = socketRef.current;
@@ -61,12 +56,15 @@ export function useMatchSocket(
       "score_update",
       (data: {
         status?: string;
+        scoreA: number;
+        scoreB: number;
         teamAEnergy: number;
         teamBEnergy: number;
         momentumRatio: number;
       }) => {
         LOG("score_update", data);
         setMomentum(Math.round(data.momentumRatio * 100));
+        setScores(data.scoreA, data.scoreB);
         if (data.status) setMatchStatus(mapMatchStatus(data.status));
       },
     );
