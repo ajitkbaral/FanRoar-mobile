@@ -1,21 +1,21 @@
-import { DARK, LIGHT, PALETTES, SEMANTIC, TeamKey } from './colors';
+import { DARK, LIGHT, TEAM_PALETTES, FALLBACK_PALETTE, SEMANTIC } from './colors';
 
 export type Theme = ReturnType<typeof buildTheme>;
 
-export function buildTheme(dark: boolean, teamKey: TeamKey = 'brazil') {
+export function buildTheme(dark: boolean, teamCode: string = 'BRA') {
   const base = dark ? DARK : LIGHT;
-  const team = PALETTES[teamKey];
+  const team = TEAM_PALETTES[teamCode] ?? FALLBACK_PALETTE;
   return {
     dark,
     ...base,
     accent:    team.primary,
     accent2:   team.secondary,
     teamName:  team.name,
-    teamCode:  team.code,
+    teamCode,
     ...SEMANTIC,
   };
 }
 
-export const DEFAULT_THEME = buildTheme(true, 'brazil');
+export const DEFAULT_THEME = buildTheme(true, 'BRA');
 
-export { TeamKey, PALETTES, DARK, LIGHT, SEMANTIC };
+export { TEAM_PALETTES, FALLBACK_PALETTE, DARK, LIGHT, SEMANTIC };

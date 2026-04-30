@@ -27,8 +27,8 @@ interface Props {
 }
 
 export default function HypeBomb({ onClose, onComplete }: Props) {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const [phase, setPhase] = useState<Phase>('countdown');
   const [countdown, setCountdown] = useState(3);

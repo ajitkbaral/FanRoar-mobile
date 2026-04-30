@@ -25,7 +25,7 @@ import PowerUpPanel from "../components/PowerUpPanel";
 import FRLiveDot from "../components/shared/FRLiveDot";
 import FRIcon from "../components/shared/FRIcon";
 import { PowerUpType, FanRole } from "../utils/constants";
-import { TEAM_COLORS } from "../theme/colors";
+import { TEAM_PALETTES } from "../theme/colors";
 import { api } from "../api/client";
 import { MainTabParamList } from "../navigation";
 
@@ -50,8 +50,8 @@ function matchStatusLabel(status: string, minute?: number): string {
 export default function MatchScreen() {
   const route = useRoute<RouteProp<MainTabParamList, "Match">>();
 
-  const { isDark, teamKey, fanRole } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode, fanRole } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -184,7 +184,7 @@ export default function MatchScreen() {
 
   const teamACode = match?.teamA.code ?? theme.teamCode;
   const teamAName = match?.teamA.name ?? theme.teamName;
-  const teamAColor = TEAM_COLORS[teamACode] ?? theme.accent;
+  const teamAColor = TEAM_PALETTES[teamACode]?.primary ?? theme.accent;
   const teamA = {
     code: teamACode,
     color: teamAColor,
@@ -194,7 +194,7 @@ export default function MatchScreen() {
 
   const teamBCode = match?.teamB.code ?? "OPP";
   const teamBName = match?.teamB.name ?? "Opponent";
-  const teamBColor = TEAM_COLORS[teamBCode] ?? theme.surface2;
+  const teamBColor = TEAM_PALETTES[teamBCode]?.primary ?? theme.surface2;
   const teamB = {
     code: teamBCode,
     color: teamBColor,

@@ -41,9 +41,9 @@ const EMPTY_YOU: Record<Tab, ApiLeaderboardEntry | null> = {
 };
 
 export default function LeaderboardScreen() {
-  const { isDark, teamKey, user } = useUserStore();
+  const { isDark, teamCode, user } = useUserStore();
   const { match } = useMatchStore();
-  const theme = buildTheme(isDark, teamKey);
+  const theme = buildTheme(isDark, teamCode);
 
   const [activeTab, setActiveTab] = useState<Tab>("global");
   const [rows, setRows] =

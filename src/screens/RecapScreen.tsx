@@ -20,8 +20,8 @@ import FRCard from '../components/shared/FRCard';
 export default function RecapScreen() {
   const { matchId } = useRoute<RouteProp<RootStackParamList, 'Recap'>>().params;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isDark, teamKey, userId } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode, userId } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const [recap, setRecap] = useState<ApiRecap | null>(null);
   const [loading, setLoading] = useState(true);

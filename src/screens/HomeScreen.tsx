@@ -15,7 +15,7 @@ import { useUserStore } from "../store/userStore";
 import FRCard from "../components/shared/FRCard";
 import FRIcon from "../components/shared/FRIcon";
 import FRLiveDot from "../components/shared/FRLiveDot";
-import { TEAM_COLORS } from "../theme/colors";
+import { TEAM_PALETTES } from "../theme/colors";
 import { api } from "../api/client";
 import { ApiMatch, ApiHistoryEntry } from "../api/types";
 
@@ -50,8 +50,8 @@ function formatUntil(iso: string): string {
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { isDark, teamKey, user, userId } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode, user, userId } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const [refreshing, setRefreshing] = useState(false);
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
@@ -401,7 +401,7 @@ export default function HomeScreen() {
                           left: 0,
                           width: `${matchMomentum}%`,
                           backgroundColor:
-                            TEAM_COLORS[m.teamA.code] ?? theme.accent,
+                            TEAM_PALETTES[m.teamA.code]?.primary ?? theme.accent,
                         }}
                       />
                       <View
@@ -412,7 +412,7 @@ export default function HomeScreen() {
                           right: 0,
                           width: `${100 - matchMomentum}%`,
                           backgroundColor:
-                            TEAM_COLORS[m.teamB.code] ?? theme.surface2,
+                            TEAM_PALETTES[m.teamB.code]?.primary ?? theme.surface2,
                         }}
                       />
                     </View>

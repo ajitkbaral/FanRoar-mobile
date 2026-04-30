@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
 import { buildTheme, Theme } from '../theme';
-import { TeamKey } from '../theme/colors';
 import { useUserStore } from '../store/userStore';
 import { FanRole } from '../utils/constants';
 import { api } from '../api/client';
@@ -999,8 +998,8 @@ function mapApiFanRole(apiRole: string): FanRole {
 }
 
 export default function OnboardingScreen({ navigation }: Props) {
-  const { isDark, teamKey, setToken, setUser, setOnboarded } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode, setToken, setUser, setOnboarded } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
   const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -1041,7 +1040,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         displayName: me.displayName ?? '',
         phone:       fullPhone,
         fanRole:     mapApiFanRole(me.fanRole),
-        teamKey:     (me.teamKey ?? teamKey) as TeamKey,
+        teamCode:    me.teamKey ?? teamCode,
         xp:          me.xp ?? 0,
         level:       me.level ?? 1,
         badges:      me.badges ?? [],
@@ -1076,7 +1075,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         displayName: me.displayName ?? displayNameLocal,
         phone:       fullPhone,
         fanRole:     mapApiFanRole(me.fanRole),
-        teamKey:     (me.teamKey ?? teamKey) as TeamKey,
+        teamCode:    me.teamKey ?? teamCode,
         xp:          me.xp ?? 0,
         level:       me.level ?? 1,
         badges:      me.badges ?? [],

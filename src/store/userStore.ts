@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FanRole } from '../utils/constants';
-import { TeamKey } from '../theme';
 import { XpUpdatePayload } from '../api/types';
 
 interface Badge {
@@ -19,7 +18,7 @@ interface UserProfile {
   displayName: string;
   phone: string;
   fanRole: FanRole;
-  teamKey: TeamKey;
+  teamCode: string;
   xp: number;
   level: number;
   xpToNextLevel: number;
@@ -34,7 +33,7 @@ interface UserState {
   userId: string | null;
   teamId: string | null;
   fanRole: FanRole;
-  teamKey: TeamKey;
+  teamCode: string;
   isDark: boolean;
   hasCompletedOnboarding: boolean;
   displayName: string;
@@ -46,7 +45,7 @@ interface UserState {
   setToken: (token: string) => void;
   setUser: (user: UserProfile) => void;
   setFanRole: (role: FanRole) => void;
-  setTeamKey: (key: TeamKey) => void;
+  setTeamCode: (code: string) => void;
   setDark: (dark: boolean) => void;
   setOnboarded: () => void;
   setDisplayName: (name: string) => void;
@@ -65,7 +64,7 @@ export const useUserStore = create<UserState>()(
       userId: null,
       teamId: 'BRA',
       fanRole: 'ultra',
-      teamKey: 'brazil',
+      teamCode: 'BRA',
       isDark: true,
       hasCompletedOnboarding: false,
       displayName: '',
@@ -79,12 +78,12 @@ export const useUserStore = create<UserState>()(
         user,
         userId: user.id,
         fanRole: user.fanRole,
-        teamKey: user.teamKey,
+        teamCode: user.teamCode,
         displayName: user.displayName,
         phone: user.phone,
       }),
       setFanRole: (fanRole) => set({ fanRole }),
-      setTeamKey: (teamKey) => set({ teamKey }),
+      setTeamCode: (teamCode) => set({ teamCode }),
       setDark: (isDark) => set({ isDark }),
       setOnboarded: () => set({ hasCompletedOnboarding: true }),
       setDisplayName: (displayName) => set({ displayName }),
@@ -113,7 +112,7 @@ export const useUserStore = create<UserState>()(
         hasCompletedOnboarding: state.hasCompletedOnboarding,
         user: state.user,
         fanRole: state.fanRole,
-        teamKey: state.teamKey,
+        teamCode: state.teamCode,
         isDark: state.isDark,
         userId: state.userId,
         teamId: state.teamId,

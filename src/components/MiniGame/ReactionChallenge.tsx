@@ -25,8 +25,8 @@ interface Props {
 }
 
 export default function ReactionChallenge({ onClose, onComplete }: Props) {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const [round, setRound] = useState(1);
   const [phase, setPhase] = useState<Phase>('waiting');

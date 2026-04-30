@@ -30,8 +30,8 @@ const GAMES: Game[] = [
 ];
 
 export default function MiniGameScreen() {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
   const { completedMiniGames, completeMiniGame, match } = useMatchStore();
   const { applyXpUpdate } = useUserStore();
   const [activeGame, setActiveGame] = useState<GameKey | null>(null);

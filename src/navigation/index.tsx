@@ -36,8 +36,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function MainTabs() {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   return (
     <Tab.Navigator
@@ -64,8 +64,8 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const { hasCompletedOnboarding, token, _hasHydrated, isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { hasCompletedOnboarding, token, _hasHydrated, isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {

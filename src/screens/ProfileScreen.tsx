@@ -43,8 +43,8 @@ const LOCKED_PLACEHOLDERS = [
 ];
 
 export default function ProfileScreen() {
-  const { isDark, teamKey, fanRole, user, userId, logout } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode, fanRole, user, userId, logout } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const displayName  = user?.displayName || 'Fan';
   const level        = user?.level ?? 1;

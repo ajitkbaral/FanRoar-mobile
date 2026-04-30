@@ -9,8 +9,8 @@ interface Props {
 }
 
 export default function XpFloater({ amount, onDone }: Props) {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;

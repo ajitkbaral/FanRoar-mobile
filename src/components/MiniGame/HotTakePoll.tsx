@@ -35,8 +35,8 @@ interface Props {
 }
 
 export default function HotTakePoll({ onClose, onComplete }: Props) {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('swiping');

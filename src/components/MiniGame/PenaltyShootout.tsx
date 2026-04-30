@@ -61,8 +61,8 @@ interface Props {
 }
 
 export default function PenaltyShootout({ onClose, onComplete }: Props) {
-  const { isDark, teamKey } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const [shots, setShots] = useState(0);
   const [scored, setScored] = useState(0);

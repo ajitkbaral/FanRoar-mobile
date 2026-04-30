@@ -12,8 +12,8 @@ function tierName(level: number): string {
 }
 
 export default function LevelUpModal() {
-  const { isDark, teamKey, pendingLevelUp, pendingLevelUpLevel, clearLevelUp } = useUserStore();
-  const theme = buildTheme(isDark, teamKey);
+  const { isDark, teamCode, pendingLevelUp, pendingLevelUpLevel, clearLevelUp } = useUserStore();
+  const theme = buildTheme(isDark, teamCode);
 
   const scale = useRef(new Animated.Value(0.8)).current;
   const opacity = useRef(new Animated.Value(0)).current;
