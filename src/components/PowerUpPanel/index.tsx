@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Theme } from '../../theme';
-import FRIcon from '../shared/FRIcon';
-import { PowerUpType, FanRole } from '../../utils/constants';
+import React from "react";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { Theme } from "../../theme";
+import FRIcon from "../shared/FRIcon";
+import { PowerUpType, FanRole } from "../../utils/constants";
 
 interface PowerUp {
   key: PowerUpType;
@@ -21,29 +21,63 @@ interface Props {
 }
 
 const POWERUPS: PowerUp[] = [
-  { key: 'mega',   icon: 'bolt',   label: 'Mega Cheer',     sub: '10×, 10s',     ready: true,  cd: '60m' },
-  { key: 'shield', icon: 'shield', label: 'Shield',         sub: 'Block 5s',     ready: true,  cd: '45m' },
-  { key: 'steal',  icon: 'fire',   label: 'Steal Momentum', sub: '5% from rival', ready: false, cd: '2m'  },
+  {
+    key: "mega",
+    icon: "bolt",
+    label: "Mega Cheer",
+    sub: "10×, 10s",
+    ready: false,
+    cd: "60m",
+  },
+  {
+    key: "shield",
+    icon: "shield",
+    label: "Shield",
+    sub: "Block 5s",
+    ready: false,
+    cd: "45m",
+  },
+  {
+    key: "steal",
+    icon: "fire",
+    label: "Steal Momentum",
+    sub: "5% from rival",
+    ready: false,
+    cd: "2m",
+  },
 ];
 
-export default function PowerUpPanel({ theme, activePowerup, role, onActivate }: Props) {
+export default function PowerUpPanel({
+  theme,
+  activePowerup,
+  role,
+  onActivate,
+}: Props) {
   return (
     <View style={{ paddingHorizontal: 20, paddingBottom: 24, paddingTop: 4 }}>
-      <Text style={{
-        fontFamily: 'JetBrainsMono_400Regular',
-        fontSize: 10,
-        color: theme.textMute,
-        letterSpacing: 1.2,
-        textTransform: 'uppercase',
-        marginBottom: 8,
-      }}>Power-Ups</Text>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <Text
+        style={{
+          fontFamily: "JetBrainsMono_400Regular",
+          fontSize: 10,
+          color: theme.textMute,
+          letterSpacing: 1.2,
+          textTransform: "uppercase",
+          marginBottom: 8,
+        }}
+      >
+        Power-Ups
+      </Text>
+      <View style={{ flexDirection: "row", gap: 8 }}>
         {POWERUPS.map((p) => {
           const isActive = activePowerup === p.key;
           return (
             <TouchableOpacity
               key={p.key}
-              onPress={() => p.ready && onActivate(p.key)}
+              onPress={() =>
+                p.ready
+                  ? onActivate(p.key)
+                  : Alert.alert('Coming Soon', 'Power-ups are not available yet. Stay tuned!')
+              }
               activeOpacity={p.ready ? 0.8 : 1}
               style={{
                 flex: 1,
@@ -61,22 +95,26 @@ export default function PowerUpPanel({ theme, activePowerup, role, onActivate }:
                 color={isActive ? theme.bg : theme.text}
                 strokeWidth={2}
               />
-              <Text style={{
-                marginTop: 6,
-                fontFamily: 'InterTight_700Bold',
-                fontSize: 12,
-                color: isActive ? theme.bg : theme.text,
-              }}>
+              <Text
+                style={{
+                  marginTop: 6,
+                  fontFamily: "InterTight_700Bold",
+                  fontSize: 12,
+                  color: isActive ? theme.bg : theme.text,
+                }}
+              >
                 {p.label}
               </Text>
-              <Text style={{
-                marginTop: 1,
-                fontFamily: 'JetBrainsMono_400Regular',
-                fontSize: 9,
-                color: isActive ? theme.bg : theme.textMute,
-                letterSpacing: 0.4,
-              }}>
-                {p.ready ? p.sub : 'CD ' + p.cd}
+              <Text
+                style={{
+                  marginTop: 1,
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 9,
+                  color: isActive ? theme.bg : theme.textMute,
+                  letterSpacing: 0.4,
+                }}
+              >
+                {p.ready ? p.sub : "CD " + p.cd}
               </Text>
             </TouchableOpacity>
           );

@@ -155,14 +155,16 @@ export function useMatchSocket(
     [matchId, teamId],
   );
 
+  const POWERUP_BACKEND_TYPE: Record<string, string> = {
+    mega: 'MEGA_CHEER',
+  };
+
   const activatePowerUp = useCallback(
     (powerUpType: string) => {
       if (!matchId) return;
-      socketRef.current.emit("activate_powerup", {
-        matchId,
-        teamId: useUserStore.getState().teamId,
-        powerUpType,
-      });
+      const backendType = POWERUP_BACKEND_TYPE[powerUpType];
+      if (!backendType) return;
+      socketRef.current.emit("activate_powerup", { type: backendType });
     },
     [matchId],
   );

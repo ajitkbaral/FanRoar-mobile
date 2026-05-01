@@ -118,7 +118,7 @@ export default function MatchScreen() {
       .finally(() => setMatchLoading(false));
   }, [matchId]);
 
-  const { emitEnergy: socketEmit, leaveRoom } = useMatchSocket(
+  const { emitEnergy: socketEmit, activatePowerUp, leaveRoom } = useMatchSocket(
     matchId,
     supportingTeamId,
   );
@@ -173,9 +173,10 @@ export default function MatchScreen() {
   const handlePowerup = useCallback(
     (type: PowerUpType) => {
       activatePowerup(type);
+      activatePowerUp(type);
       socketEmit(0, "powerup");
     },
-    [activatePowerup, socketEmit],
+    [activatePowerup, activatePowerUp, socketEmit],
   );
 
   const totalMult = getMultiplierDisplay(
