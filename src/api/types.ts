@@ -8,6 +8,7 @@ export interface ApiMatch {
   scores: { teamA: number; teamB: number };
   momentumRatio?: number;
   minute?: number;
+  tournament?: { name: string; shortName: string; logoUrl?: string };
 }
 
 // Raw Prisma shapes returned by the backend
@@ -24,6 +25,12 @@ interface _BackendMatchTotal {
   momentumRatio: number;
 }
 
+interface _BackendTournament {
+  name: string;
+  shortName: string;
+  logoUrl?: string | null;
+}
+
 export interface BackendMatch {
   id: string;
   teamA: _BackendTeam;
@@ -34,6 +41,7 @@ export interface BackendMatch {
   scoreA?: number;
   scoreB?: number;
   matchTotals?: _BackendMatchTotal[];
+  tournament?: _BackendTournament | null;
 }
 
 export function mapMatchStatus(s: string): ApiMatch['status'] {
@@ -54,6 +62,9 @@ export function mapMatch(m: BackendMatch): ApiMatch {
     stage: m.sport,
     scores: { teamA: m.scoreA ?? 0, teamB: m.scoreB ?? 0 },
     momentumRatio: teamATotal?.momentumRatio,
+    tournament: m.tournament
+      ? { name: m.tournament.name, shortName: m.tournament.shortName, logoUrl: m.tournament.logoUrl ?? undefined }
+      : undefined,
   };
 }
 

@@ -21,6 +21,7 @@ export interface Match {
   status: 'live' | 'halftime' | 'upcoming' | 'finished';
   minute?: number;
   stage?: string;
+  tournament?: { name: string; shortName: string; logoUrl?: string };
 }
 
 interface MatchState {

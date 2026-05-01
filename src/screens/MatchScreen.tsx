@@ -108,6 +108,7 @@ export default function MatchScreen() {
           status: m.status,
           minute: m.minute,
           stage: m.stage,
+          tournament: m.tournament,
         });
         setScores(m.scores.teamA, m.scores.teamB);
         if (m.momentumRatio != null)
@@ -331,6 +332,40 @@ export default function MatchScreen() {
             </Text>
           )}
         </View>
+
+        {/* Tournament label */}
+        {match?.tournament && (
+          <View
+            style={{
+              paddingHorizontal: 20,
+              paddingTop: 6,
+              paddingBottom: 0,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <View
+              style={{
+                paddingVertical: 3,
+                paddingHorizontal: 8,
+                borderRadius: 6,
+                backgroundColor: theme.surface2,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_700Bold",
+                  fontSize: 10,
+                  color: theme.accent,
+                  letterSpacing: 0.8,
+                }}
+              >
+                {match.tournament.shortName.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Scoreline */}
         <View

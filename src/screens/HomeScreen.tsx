@@ -307,16 +307,27 @@ export default function HomeScreen() {
                       >
                         LIVE{m.minute != null ? ` · ${m.minute}'` : ""}
                       </Text>
-                      <Text
-                        style={{
-                          fontFamily: "JetBrainsMono_400Regular",
-                          fontSize: 10,
-                          color: theme.textMute,
-                          letterSpacing: 0.5,
-                        }}
-                      >
-                        · {m.stage?.toUpperCase() ?? ""}
-                      </Text>
+                      {m.tournament && (
+                        <View
+                          style={{
+                            paddingVertical: 2,
+                            paddingHorizontal: 6,
+                            borderRadius: 4,
+                            backgroundColor: theme.surface2,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontFamily: "JetBrainsMono_700Bold",
+                              fontSize: 9,
+                              color: theme.accent,
+                              letterSpacing: 0.6,
+                            }}
+                          >
+                            {m.tournament.shortName.toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                     </View>
 
                     {/* Scoreline */}
@@ -568,7 +579,7 @@ export default function HomeScreen() {
                       marginTop: 2,
                     }}
                   >
-                    {m.stage?.toUpperCase() ?? ""}
+                    {m.tournament ? m.tournament.shortName.toUpperCase() : (m.stage?.toUpperCase() ?? "")}
                     {m.kickoffTime ? ` · IN ${formatUntil(m.kickoffTime)}` : ""}
                   </Text>
                 </View>
