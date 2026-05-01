@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
+import { useMatchStore } from '../store/matchStore';
 import { api } from '../api/client';
 import { type ApiRecap } from '../api/types';
 import type { RootStackParamList } from '../navigation';
@@ -21,9 +22,17 @@ export default function RecapScreen() {
   const { matchId } = useRoute<RouteProp<RootStackParamList, 'Recap'>>().params;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark, teamCode, userId } = useUserStore();
+  const { match: liveMatch, supportingTeamId } = useMatchStore();
   const theme = buildTheme(isDark, teamCode);
 
   const [recap, setRecap] = useState<ApiRecap | null>(null);
+
+  // Derive which team the user rooted for; fall back to teamA if store was cleared
+  const supportingTeamName = recap
+    ? (liveMatch && supportingTeamId && supportingTeamId === liveMatch.teamB.id
+        ? recap.match.teamB
+        : recap.match.teamA)
+    : '';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -61,7 +70,7 @@ export default function RecapScreen() {
     if (!recap) return;
     try {
       await Share.share({
-        message: `I drove ${recap.impactPercent.toFixed(1)}% of ${recap.match.teamA}'s energy in the WC ${recap.match.stage}! Ranked #${recap.rank}. #FanRoar #${recap.match.teamA}`,
+        message: `I drove ${recap.impactPercent.toFixed(1)}% of ${supportingTeamName}'s energy in the WC ${recap.match.stage}! Ranked #${recap.rank}. #FanRoar #${supportingTeamName}`,
       });
     } catch {}
   };
@@ -163,6 +172,7 @@ export default function RecapScreen() {
                   date: recap.match.date,
                   venue: recap.match.venue,
                 }}
+                supportingTeam={supportingTeamName}
               />
             </View>
 

@@ -16,9 +16,15 @@ export function useMatchSocket(
   const boostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { setMomentum, setScores, setEventMode, addMatchEvent, setMatchStatus } =
     useMatchStore();
-  const { userId, user } = useUserStore();
+  const { userId, user, fanRole } = useUserStore();
 
   const resolvedUserId = userId ?? user?.id ?? null;
+
+  const backendFanRole =
+    fanRole === 'ultra' ? 'ULTRA_FAN'
+    : fanRole === 'drummer' ? 'DRUMMER'
+    : fanRole === 'chanter' ? 'CHANTER'
+    : 'CASUAL';
 
   const joinRoom = useCallback(() => {
     if (!matchId) {
@@ -30,9 +36,9 @@ export function useMatchSocket(
       LOG("not connected — calling connect()");
       socket.connect();
     }
-    LOG("emit join_match", { matchId, teamId, userId: resolvedUserId });
-    socket.emit("join_match", { matchId, teamId, userId: resolvedUserId });
-  }, [matchId, teamId, resolvedUserId]);
+    LOG("emit join_match", { matchId, teamId, userId: resolvedUserId, fanRole: backendFanRole });
+    socket.emit("join_match", { matchId, teamId, userId: resolvedUserId, fanRole: backendFanRole });
+  }, [matchId, teamId, resolvedUserId, backendFanRole]);
 
   // Always-current ref so socket listeners never hold a stale joinRoom closure
   const joinRoomRef = useRef(joinRoom);
@@ -139,11 +145,11 @@ export function useMatchSocket(
       socket.off("connect_error");
       sub.remove();
     };
-  }, [matchId, teamId, resolvedUserId]);
+  }, [matchId, teamId, resolvedUserId, backendFanRole]);
 
   const emitEnergy = useCallback(
     (amount: number, inputType: string) => {
-      if (!matchId) return;
+      if (!matchId || !teamId) return;
       socketRef.current.emit("energy_batch", {
         matchId,
         teamId,

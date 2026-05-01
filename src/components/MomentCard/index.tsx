@@ -26,9 +26,10 @@ interface Props {
   theme: Theme;
   stats: RecapStats;
   match: MatchInfo;
+  supportingTeam: string;
 }
 
-export default function MomentCard({ theme, stats, match }: Props) {
+export default function MomentCard({ theme, stats, match, supportingTeam }: Props) {
   return (
     <View style={{
       borderRadius: 22,
@@ -91,7 +92,7 @@ export default function MomentCard({ theme, stats, match }: Props) {
             lineHeight: 32,
             letterSpacing: -1,
           }}>
-            of {match.teamA}'s final push.
+            of {supportingTeam}'s final push.
           </Text>
         </View>
 
@@ -99,7 +100,7 @@ export default function MomentCard({ theme, stats, match }: Props) {
           <RecapStat theme={theme} value={stats.energyDelivered.toLocaleString()} label="Energy delivered" />
           <RecapStat theme={theme} value={stats.shakeEvents.toString()} label="Shake events" />
           <RecapStat theme={theme} value={stats.tapCombos.toString()} label="Tap combos" />
-          <RecapStat theme={theme} value={`#${stats.rank}`} label="Brazil rank" />
+          <RecapStat theme={theme} value={`#${stats.rank}`} label={`${supportingTeam} rank`} />
         </View>
       </LinearGradient>
     </View>
