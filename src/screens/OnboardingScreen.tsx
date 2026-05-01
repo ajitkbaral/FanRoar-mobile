@@ -997,7 +997,7 @@ function mapApiFanRole(apiRole: string): FanRole {
   return map[apiRole] ?? 'ultra';
 }
 
-export default function OnboardingScreen({ navigation }: Props) {
+export default function OnboardingScreen(_props: Props) {
   const { isDark, teamCode, setToken, setUser, setOnboarded } = useUserStore();
   const theme = buildTheme(isDark, teamCode);
   const insets = useSafeAreaInsets();
@@ -1036,21 +1036,22 @@ export default function OnboardingScreen({ navigation }: Props) {
       setToken(authData.accessToken);
       const { data: me } = await api.auth.me();
       setUser({
-        id:          me.userId,
-        displayName: me.displayName ?? '',
-        phone:       fullPhone,
-        fanRole:     mapApiFanRole(me.fanRole),
-        teamCode:    me.teamKey ?? teamCode,
-        xp:          me.xp ?? 0,
-        level:       me.level ?? 1,
-        badges:      me.badges ?? [],
-        countryCode: me.countryCode ?? country.code,
-        cityCode:    me.cityCode ?? '',
+        id:            me.userId,
+        displayName:   me.displayName ?? '',
+        phone:         fullPhone,
+        fanRole:       mapApiFanRole(me.fanRole),
+        teamCode:      me.teamKey ?? teamCode,
+        xp:            me.xp ?? 0,
+        xpToNextLevel: me.xpToNextLevel ?? (me.level ?? 1) * 1000,
+        level:         me.level ?? 1,
+        badges:        me.badges ?? [],
+        countryCode:   me.countryCode ?? country.code,
+        cityCode:      me.cityCode ?? '',
       });
       if (me.fanRole && me.fanRole !== 'CASUAL') {
         setDisplayNameLocal(me.displayName);
         setOnboarded();
-        navigation.replace('Main');
+        // navigator auto-switches to Main when isAuthenticated becomes true
       } else {
         setStep(3);
       }
@@ -1071,19 +1072,20 @@ export default function OnboardingScreen({ navigation }: Props) {
       });
       const { data: me } = await api.auth.me();
       setUser({
-        id:          me.userId,
-        displayName: me.displayName ?? displayNameLocal,
-        phone:       fullPhone,
-        fanRole:     mapApiFanRole(me.fanRole),
-        teamCode:    me.teamKey ?? teamCode,
-        xp:          me.xp ?? 0,
-        level:       me.level ?? 1,
-        badges:      me.badges ?? [],
-        countryCode: me.countryCode ?? country.code,
-        cityCode:    me.cityCode ?? '',
+        id:            me.userId,
+        displayName:   me.displayName ?? displayNameLocal,
+        phone:         fullPhone,
+        fanRole:       mapApiFanRole(me.fanRole),
+        teamCode:      me.teamKey ?? teamCode,
+        xp:            me.xp ?? 0,
+        xpToNextLevel: me.xpToNextLevel ?? (me.level ?? 1) * 1000,
+        level:         me.level ?? 1,
+        badges:        me.badges ?? [],
+        countryCode:   me.countryCode ?? country.code,
+        cityCode:      me.cityCode ?? '',
       });
       setOnboarded();
-      navigation.replace('Main');
+      // navigator auto-switches to Main when isAuthenticated becomes true
     } catch (e: any) {
       setError(e.response?.data?.message ?? 'Something went wrong. Try again.');
       setLoading(false);
