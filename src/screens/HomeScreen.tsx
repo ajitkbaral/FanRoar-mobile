@@ -16,6 +16,7 @@ import FRCard from "../components/shared/FRCard";
 import FRIcon from "../components/shared/FRIcon";
 import FRLiveDot from "../components/shared/FRLiveDot";
 import { TEAM_PALETTES } from "../theme/colors";
+import * as Haptics from "expo-haptics";
 import { api } from "../api/client";
 import { ApiMatch, ApiHistoryEntry } from "../api/types";
 
@@ -59,6 +60,23 @@ export default function HomeScreen() {
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
   const [myRank, setMyRank] = useState<number | null>(null);
+  const [remindedIds, setRemindedIds] = useState<Set<string>>(new Set());
+
+  // TODO: wire up expo-notifications — request permissions, schedule a local notification
+  // ~10min before kickoff using Notifications.scheduleNotificationAsync with the match kickoffTime.
+  const toggleReminder = useCallback((matchId: string) => {
+    setRemindedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(matchId)) {
+        next.delete(matchId);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        next.add(matchId);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      return next;
+    });
+  }, []);
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -598,19 +616,24 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate("Match", { matchId: m.matchId })
-                  }
+                  onPress={() => toggleReminder(m.matchId)}
+                  activeOpacity={0.75}
                   style={{
                     width: 30,
                     height: 30,
                     borderRadius: 10,
-                    backgroundColor: theme.surface2,
+                    backgroundColor: remindedIds.has(m.matchId)
+                      ? theme.accent + "22"
+                      : theme.surface2,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <FRIcon name="plus" size={14} color={theme.text} />
+                  <FRIcon
+                    name={remindedIds.has(m.matchId) ? "bell-fill" : "bell"}
+                    size={14}
+                    color={remindedIds.has(m.matchId) ? theme.accent : theme.textMute}
+                  />
                 </TouchableOpacity>
               </View>
             ))
@@ -682,7 +705,7 @@ export default function HomeScreen() {
                 color: theme.textMute,
               }}
             >
-              {totalEnergy != null ? "THIS TOURNAMENT" : "LOADING..."}
+              {matchesLoading ? "LOADING..." : "THIS TOURNAMENT"}
             </Text>
           </FRCard>
           <FRCard theme={theme} padding={14} style={{ flex: 1 }}>

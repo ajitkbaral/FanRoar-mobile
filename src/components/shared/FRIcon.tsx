@@ -29,6 +29,10 @@ export default function FRIcon({ name, size = 20, color = 'currentColor', stroke
       return <Svg {...props}><Rect x="9" y="3" width="6" height="12" rx="3" {...s} /><Path d="M5 11a7 7 0 0014 0M12 18v3" {...s} /></Svg>;
     case 'plus':
       return <Svg {...props}><Path d="M12 5v14M5 12h14" {...s} /></Svg>;
+    case 'bell':
+      return <Svg {...props}><Path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" {...s} /></Svg>;
+    case 'bell-fill':
+      return <Svg {...props}><Path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" fill={color} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" /><Path d="M13.73 21a2 2 0 01-3.46 0" {...s} /></Svg>;
     case 'arrow':
       return <Svg {...props}><Path d="M5 12h14M13 6l6 6-6 6" {...s} /></Svg>;
     case 'play':
