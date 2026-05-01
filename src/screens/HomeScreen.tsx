@@ -280,6 +280,13 @@ export default function HomeScreen() {
                 m.momentumRatio != null
                   ? Math.round(m.momentumRatio * 100)
                   : 50;
+              const abbreviate = m.teamA.name.length > 7 || m.teamB.name.length > 7;
+              const labelA = abbreviate
+                ? (m.teamA.code ?? m.teamA.name.slice(0, 3)).toUpperCase()
+                : m.teamA.name;
+              const labelB = abbreviate
+                ? (m.teamB.code ?? m.teamB.name.slice(0, 3)).toUpperCase()
+                : m.teamB.name;
               return (
                 <FRCard
                   key={m.matchId}
@@ -334,12 +341,12 @@ export default function HomeScreen() {
                     <View
                       style={{
                         flexDirection: "row",
-                        justifyContent: "space-between",
                         alignItems: "center",
                       }}
                     >
                       <View
                         style={{
+                          flex: 1,
                           flexDirection: "row",
                           alignItems: "center",
                           gap: 10,
@@ -352,16 +359,19 @@ export default function HomeScreen() {
                         />
                         <Text
                           style={{
+                            flexShrink: 1,
                             fontFamily: "InterTight_700Bold",
                             fontSize: 22,
                             color: theme.text,
                           }}
                         >
-                          {m.teamA.name}
+                          {labelA}
                         </Text>
                       </View>
                       <Text
                         style={{
+                          width: 88,
+                          textAlign: "center",
                           fontFamily: "JetBrainsMono_700Bold",
                           fontSize: 28,
                           color: theme.text,
@@ -372,19 +382,23 @@ export default function HomeScreen() {
                       </Text>
                       <View
                         style={{
+                          flex: 1,
                           flexDirection: "row",
                           alignItems: "center",
+                          justifyContent: "flex-end",
                           gap: 10,
                         }}
                       >
                         <Text
                           style={{
+                            flexShrink: 1,
+                            textAlign: "right",
                             fontFamily: "InterTight_700Bold",
                             fontSize: 22,
                             color: theme.text,
                           }}
                         >
-                          {m.teamB.name}
+                          {labelB}
                         </Text>
                         <Image
                           source={{ uri: m.teamB.flagUrl ?? "" }}
