@@ -53,8 +53,8 @@ export const api = {
   leaderboard: {
     global: (matchId: string, limit = 20) =>
       client.get<LeaderboardResponse>('/leaderboard/global', { params: { matchId, limit } }),
-    country: (matchId: string, countryCode: string, limit = 20) =>
-      client.get<LeaderboardResponse>('/leaderboard/country', { params: { matchId, countryCode, limit } }),
+    country: (matchId: string, teamCode: string, limit = 20) =>
+      client.get<LeaderboardResponse>('/leaderboard/country', { params: { matchId, teamCode, limit } }),
     city: (matchId: string, cityCode: string, limit = 20) =>
       client.get<LeaderboardResponse>('/leaderboard/city', { params: { matchId, cityCode, limit } }),
     friends: (matchId: string, limit = 20) =>

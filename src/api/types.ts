@@ -15,7 +15,7 @@ export interface ApiMatch {
 interface _BackendTeam {
   id: string;
   name: string;
-  countryCode: string;
+  teamCode: string;
   flagUrl?: string | null;
 }
 
@@ -55,8 +55,8 @@ export function mapMatch(m: BackendMatch): ApiMatch {
   const teamATotal = m.matchTotals?.find((t) => t.teamId === m.teamA.id);
   return {
     matchId: m.id,
-    teamA: { id: m.teamA.id, code: m.teamA.countryCode, name: m.teamA.name, flagUrl: m.teamA.flagUrl ?? undefined },
-    teamB: { id: m.teamB.id, code: m.teamB.countryCode, name: m.teamB.name, flagUrl: m.teamB.flagUrl ?? undefined },
+    teamA: { id: m.teamA.id, code: m.teamA.teamCode, name: m.teamA.name, flagUrl: m.teamA.flagUrl ?? undefined },
+    teamB: { id: m.teamB.id, code: m.teamB.teamCode, name: m.teamB.name, flagUrl: m.teamB.flagUrl ?? undefined },
     status: mapMatchStatus(m.status),
     kickoffTime: m.startTime,
     stage: m.sport,
