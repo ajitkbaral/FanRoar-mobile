@@ -13,6 +13,7 @@ export function useMatchSocket(
 ) {
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
+  const boostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { setMomentum, setScores, setEventMode, addMatchEvent, setMatchStatus } =
     useMatchStore();
   const { userId, user } = useUserStore();
@@ -83,8 +84,14 @@ export function useMatchSocket(
 
     socket.on(
       "boost_activated",
-      (data: { teamId: string; powerUpType: string; durationMs: number }) => {
+      (data: { teamId: string; boostType: string; durationMs: number }) => {
         LOG("boost_activated", data);
+        setEventMode("goal");
+        if (boostTimerRef.current) clearTimeout(boostTimerRef.current);
+        boostTimerRef.current = setTimeout(() => {
+          setEventMode("normal");
+          boostTimerRef.current = null;
+        }, data.durationMs);
       },
     );
 
@@ -120,6 +127,7 @@ export function useMatchSocket(
 
     return () => {
       LOG("cleanup — leaving room, matchId:", matchId, "teamId:", teamId);
+      if (boostTimerRef.current) clearTimeout(boostTimerRef.current);
       leaveRoom();
       socket.off("connect");
       socket.off("score_update");
