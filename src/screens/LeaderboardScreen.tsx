@@ -126,8 +126,8 @@ export default function LeaderboardScreen() {
     n >= 1_000_000
       ? (n / 1_000_000).toFixed(1) + "M"
       : n >= 1_000
-      ? (n / 1_000).toFixed(0) + "K"
-      : String(n);
+        ? (n / 1_000).toFixed(0) + "K"
+        : String(n);
 
   const pulse = useSharedValue(1);
   useEffect(() => {
@@ -257,7 +257,7 @@ export default function LeaderboardScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <FRLiveDot color={theme.success} size={7} />
+            <FRLiveDot color={theme.danger} size={7} />
             <Text
               style={{
                 fontFamily: "JetBrainsMono_400Regular",
@@ -266,7 +266,7 @@ export default function LeaderboardScreen() {
                 letterSpacing: 0.5,
               }}
             >
-              Live · synced 2s ago
+              LIVE · synced 2s ago
             </Text>
           </View>
           <Text
