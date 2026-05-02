@@ -80,7 +80,20 @@ export default function AppNavigator() {
 
     api.auth.me()
       .then((res) => {
-        useUserStore.getState().setUser(res.data);
+        const me = res.data;
+        useUserStore.getState().setUser({
+          id: me.userId,
+          displayName: me.displayName,
+          phone: me.phone,
+          fanRole: me.fanRole,
+          teamCode: me.teamKey,
+          xp: me.xp,
+          level: me.level,
+          xpToNextLevel: me.xpToNextLevel,
+          badges: me.badges ?? [],
+          countryCode: me.countryCode,
+          cityCode: me.cityCode,
+        });
       })
       .catch(() => {
         // 401 interceptor calls logout(), clearing token + hasCompletedOnboarding

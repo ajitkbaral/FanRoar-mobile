@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, SafeAreaView, Share,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, cancelAnimation,
@@ -26,46 +25,104 @@ export default function RecapScreen() {
   const theme = buildTheme(isDark, teamCode);
 
   const [recap, setRecap] = useState<ApiRecap | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  // Increment to manually restart the fetch (e.g. from the error state Retry button)
+  const [fetchVersion, setFetchVersion] = useState(0);
 
-  // Derive which team the user rooted for; fall back to teamA if store was cleared
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const skeletonOpacity = useSharedValue(1);
+  const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
+
   const supportingTeamName = recap
     ? (liveMatch && supportingTeamId && supportingTeamId === liveMatch.teamB.id
         ? recap.match.teamB
         : recap.match.teamA)
     : '';
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
 
-  const skeletonOpacity = useSharedValue(1);
-  const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
+  // useEffect (not useFocusEffect) is correct here: RecapScreen is always pushed/replaced
+  // as a stack entry, so it mounts fresh on every navigation. useFocusEffect's retry-via-deps
+  // pattern is broken — it only re-calls the callback on focus events, not dep changes.
+  React.useEffect(() => {
+    if (!userId || !matchId) {
+      setLoading(false);
+      return;
+    }
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!userId || !matchId) return;
-      let cancelled = false;
-      setLoading(true);
-      setError(null);
-      skeletonOpacity.value = withRepeat(
-        withSequence(withTiming(0.4, { duration: 600 }), withTiming(1, { duration: 600 })),
-        -1,
-        false,
-      );
+    let cancelled = false;
+    let attempt = 0;
+
+    setLoading(true);
+    setError(null);
+    setRecap(null);
+    setRetryCount(0);
+
+    skeletonOpacity.value = withRepeat(
+      withSequence(withTiming(0.4, { duration: 600 }), withTiming(1, { duration: 600 })),
+      -1,
+      false,
+    );
+
+    const stopLoading = () => {
+      setLoading(false);
+      cancelAnimation(skeletonOpacity);
+      skeletonOpacity.value = 1;
+    };
+
+    const fetchOnce = () => {
       api.profile
         .recap(userId, matchId)
-        .then((r) => { if (!cancelled) setRecap(r.data); })
-        .catch(() => { if (!cancelled) setError('Recap unavailable'); })
-        .finally(() => {
-          if (!cancelled) {
-            setLoading(false);
-            cancelAnimation(skeletonOpacity);
-            skeletonOpacity.value = 1;
+        .then((r) => {
+          if (cancelled) return;
+          if (r.data) {
+            const hasActivity =
+              r.data.energyDelivered > 0 || r.data.shakeEvents > 0 || r.data.tapCombos > 0;
+            if (hasActivity || attempt >= 3) {
+              setRecap(r.data);
+              stopLoading();
+            } else {
+              // Backend returned zeros — Redis flush may not have completed yet. Retry.
+              attempt += 1;
+              setRetryCount(attempt);
+              timeoutRef.current = setTimeout(fetchOnce, 3000);
+            }
+          } else {
+            if (attempt < 3) {
+              attempt += 1;
+              setRetryCount(attempt);
+              timeoutRef.current = setTimeout(fetchOnce, 3000);
+            } else {
+              stopLoading();
+            }
+          }
+        })
+        .catch(() => {
+          if (cancelled) return;
+          if (attempt < 3) {
+            attempt += 1;
+            setRetryCount(attempt);
+            timeoutRef.current = setTimeout(fetchOnce, 3000);
+          } else {
+            setError('Recap unavailable');
+            stopLoading();
           }
         });
-      return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId, matchId, retryKey]),
-  );
+    };
+
+    fetchOnce();
+
+    return () => {
+      cancelled = true;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  // fetchVersion is intentionally included so the Retry button can restart the fetch
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, matchId, fetchVersion]);
 
   const handleShare = async () => {
     if (!recap) return;
@@ -119,9 +176,12 @@ export default function RecapScreen() {
         {/* Loading skeleton */}
         {loading && (
           <>
-            <Animated.View style={[{ marginHorizontal: 20, marginTop: 12, height: 280, borderRadius: 22, backgroundColor: theme.surface }, skeletonStyle]} />
-            <Animated.View style={[{ marginHorizontal: 20, marginTop: 14, height: 64, borderRadius: 14, backgroundColor: theme.surface }, skeletonStyle]} />
-            <Animated.View style={[{ marginHorizontal: 20, marginTop: 12, height: 48, borderRadius: 14, backgroundColor: theme.surface }, skeletonStyle]} />
+            <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: theme.textMute, letterSpacing: 0.8, textTransform: 'uppercase', marginHorizontal: 20, marginTop: 14 }}>
+              {retryCount > 0 ? `Preparing recap · retry ${retryCount}/3…` : 'Loading your recap…'}
+            </Text>
+            <Animated.View style={[{ marginHorizontal: 20, marginTop: 10, height: 280, borderRadius: 22, backgroundColor: theme.surface2 }, skeletonStyle]} />
+            <Animated.View style={[{ marginHorizontal: 20, marginTop: 14, height: 64, borderRadius: 14, backgroundColor: theme.surface2 }, skeletonStyle]} />
+            <Animated.View style={[{ marginHorizontal: 20, marginTop: 12, height: 48, borderRadius: 14, backgroundColor: theme.surface2 }, skeletonStyle]} />
           </>
         )}
 
@@ -132,7 +192,7 @@ export default function RecapScreen() {
               {error.toUpperCase()}
             </Text>
             <TouchableOpacity
-              onPress={() => setRetryKey((k) => k + 1)}
+              onPress={() => setFetchVersion((v) => v + 1)}
               activeOpacity={0.8}
               style={{
                 paddingHorizontal: 20,
@@ -191,7 +251,7 @@ export default function RecapScreen() {
           </View>
         )}
 
-        {/* Catch-all: loading resolved but recap is still null (e.g. userId was absent at focus time) */}
+        {/* Catch-all: loading resolved but recap is null (userId absent at mount time) */}
         {!loading && !error && !recap && (
           <View style={{ paddingHorizontal: 20, paddingTop: 60, alignItems: 'center', gap: 12 }}>
             <View style={{
@@ -218,7 +278,7 @@ export default function RecapScreen() {
         )}
 
         {/* Loaded content */}
-        {!loading && recap && !(recap.energyDelivered === 0 && recap.shakeEvents === 0 && recap.tapCombos === 0) && (
+        {!loading && recap && (recap.energyDelivered > 0 || recap.shakeEvents > 0 || recap.tapCombos > 0) && (
           <>
             {/* Moment card */}
             <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>

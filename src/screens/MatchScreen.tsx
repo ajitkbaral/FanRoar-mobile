@@ -80,10 +80,10 @@ export default function MatchScreen() {
   }, [match?.status]);
 
   useEffect(() => {
-    if (match?.status === "finished" && match.id) {
+    if (match?.status === "finished" && match.id && match.id === matchId) {
       navigation.replace("Recap", { matchId: match.id });
     }
-  }, [match?.status, match?.id]);
+  }, [match?.status, match?.id, matchId]);
   const { myEnergy, combo, activePowerup, activatePowerup } = useEnergyStore();
 
   const [bursts, setBursts] = useState<Burst[]>([]);
