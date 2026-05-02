@@ -53,7 +53,7 @@ const EMPTY_YOU: Record<Tab, ApiLeaderboardEntry | null> = {
 
 export default function LeaderboardScreen() {
   const { isDark, teamCode, user } = useUserStore();
-  const { match } = useMatchStore();
+  const { match, lastMatchId } = useMatchStore();
   const theme = buildTheme(isDark, teamCode);
   const {
     friends,
@@ -133,7 +133,7 @@ export default function LeaderboardScreen() {
       if (!force && fetched.current.has(tab)) return;
       if (force && fetchingRef.current) return;
 
-      fetchingRef.current = force;
+      if (force) fetchingRef.current = true;
       setLoading(true);
       if (force) {
         setSyncedLabel("syncing...");
@@ -142,7 +142,7 @@ export default function LeaderboardScreen() {
       setError(null);
 
       try {
-        let matchId = match?.id;
+        let matchId = match?.id ?? lastMatchId ?? undefined;
         if (!matchId) {
           const liveRes = await api.matches.live();
           matchId = liveRes.data[0]?.matchId;
@@ -185,7 +185,7 @@ export default function LeaderboardScreen() {
         if (force) fetchingRef.current = false;
       }
     },
-    [match?.id, user?.countryCode],
+    [match?.id, lastMatchId, user?.countryCode],
   );
 
   const onRefresh = useCallback(async () => {
