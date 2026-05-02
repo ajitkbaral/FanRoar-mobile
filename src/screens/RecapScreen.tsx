@@ -9,7 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
-import { useMatchStore } from '../store/matchStore';
 import { api } from '../api/client';
 import { type ApiRecap } from '../api/types';
 import type { RootStackParamList } from '../navigation';
@@ -18,10 +17,9 @@ import FRIcon from '../components/shared/FRIcon';
 import FRCard from '../components/shared/FRCard';
 
 export default function RecapScreen() {
-  const { matchId } = useRoute<RouteProp<RootStackParamList, 'Recap'>>().params;
+  const { matchId, supportingTeamSide } = useRoute<RouteProp<RootStackParamList, 'Recap'>>().params;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark, teamCode, userId } = useUserStore();
-  const { match: liveMatch, supportingTeamId } = useMatchStore();
   const theme = buildTheme(isDark, teamCode);
 
   const [recap, setRecap] = useState<ApiRecap | null>(null);
@@ -37,9 +35,7 @@ export default function RecapScreen() {
   const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
 
   const supportingTeamName = recap
-    ? (liveMatch && supportingTeamId && supportingTeamId === liveMatch.teamB.id
-        ? recap.match.teamB
-        : recap.match.teamA)
+    ? (supportingTeamSide === 'B' ? recap.match.teamB : recap.match.teamA)
     : '';
 
   // useEffect (not useFocusEffect) is correct here: RecapScreen is always pushed/replaced

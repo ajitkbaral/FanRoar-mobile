@@ -21,7 +21,7 @@ import MiniGameScreen from '../screens/MiniGameScreen';
 export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
-  Recap: { matchId: string };
+  Recap: { matchId: string; supportingTeamSide?: 'A' | 'B' };
   MiniGame: { matchId: string };
 };
 

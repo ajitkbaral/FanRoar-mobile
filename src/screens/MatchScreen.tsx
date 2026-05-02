@@ -81,7 +81,11 @@ export default function MatchScreen() {
 
   useEffect(() => {
     if (match?.status === "finished" && match.id && match.id === matchId) {
-      navigation.replace("Recap", { matchId: match.id });
+      const id = match.id;
+      const side: 'A' | 'B' | undefined =
+        supportingTeamId === match.teamB.id ? 'B' : supportingTeamId ? 'A' : undefined;
+      resetMatch();
+      navigation.replace("Recap", { matchId: id, supportingTeamSide: side });
     }
   }, [match?.status, match?.id, matchId]);
   const { myEnergy, combo, activePowerup, activatePowerup } = useEnergyStore();
@@ -485,7 +489,13 @@ export default function MatchScreen() {
               color: theme.accent,
               icon: "trophy",
             }}
-            onPress={() => navigation.navigate("Recap", { matchId })}
+            onPress={() => {
+              const id = matchId;
+              const side: 'A' | 'B' | undefined =
+                supportingTeamId === match?.teamB.id ? 'B' : supportingTeamId ? 'A' : undefined;
+              resetMatch();
+              navigation.navigate("Recap", { matchId: id, supportingTeamSide: side });
+            }}
           />
         ) : (
           eventMode !== "normal" &&
