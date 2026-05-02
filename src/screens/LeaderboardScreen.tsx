@@ -26,7 +26,11 @@ import { useMatchStore } from "../store/matchStore";
 import { useFriendsStore } from "../store/friendsStore";
 import FRLiveDot from "../components/shared/FRLiveDot";
 import { api } from "../api/client";
-import { ApiLeaderboardEntry, ApiFriendRequest, ApiSentRequest } from "../api/types";
+import {
+  ApiLeaderboardEntry,
+  ApiFriendRequest,
+  ApiSentRequest,
+} from "../api/types";
 
 type Tab = "global" | "country" | "friends";
 
@@ -82,7 +86,10 @@ export default function LeaderboardScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [phoneInput, setPhoneInput] = useState("");
   const [requestLoading, setRequestLoading] = useState(false);
-  const [requestMsg, setRequestMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [requestMsg, setRequestMsg] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -101,15 +108,24 @@ export default function LeaderboardScreen() {
 
   // Load friends data once on mount
   useEffect(() => {
-    api.friends.list().then((res) => {
-      setFriends(res.data.friends, res.data.pendingCount);
-    }).catch(() => {});
-    api.friends.pending().then((res) => {
-      setPendingRequests(res.data.requests);
-    }).catch(() => {});
-    api.friends.sent().then((res) => {
-      setSentRequests(res.data.requests);
-    }).catch(() => {});
+    api.friends
+      .list()
+      .then((res) => {
+        setFriends(res.data.friends, res.data.pendingCount);
+      })
+      .catch(() => {});
+    api.friends
+      .pending()
+      .then((res) => {
+        setPendingRequests(res.data.requests);
+      })
+      .catch(() => {});
+    api.friends
+      .sent()
+      .then((res) => {
+        setSentRequests(res.data.requests);
+      })
+      .catch(() => {});
   }, []);
 
   const fetchTab = useCallback(
@@ -153,13 +169,15 @@ export default function LeaderboardScreen() {
         setYou((prev) => ({ ...prev, [tab]: youEntry ?? null }));
         fetched.current.add(tab);
         const elapsed = Date.now() - syncStartRef.current;
-        if (force && elapsed < 1000) await new Promise(r => setTimeout(r, 1000 - elapsed));
+        if (force && elapsed < 1000)
+          await new Promise((r) => setTimeout(r, 1000 - elapsed));
         setSyncedLabel("synced just now");
       } catch {
         setError("Live rankings unavailable");
         if (force) {
           const elapsed = Date.now() - syncStartRef.current;
-          if (elapsed < 1000) await new Promise(r => setTimeout(r, 1000 - elapsed));
+          if (elapsed < 1000)
+            await new Promise((r) => setTimeout(r, 1000 - elapsed));
           setSyncedLabel("sync failed");
         }
       } finally {
@@ -315,15 +333,24 @@ export default function LeaderboardScreen() {
   };
 
   const refreshFriendsStore = useCallback(() => {
-    api.friends.list().then((res) => {
-      setFriends(res.data.friends, res.data.pendingCount);
-    }).catch(() => {});
-    api.friends.pending().then((res) => {
-      setPendingRequests(res.data.requests);
-    }).catch(() => {});
-    api.friends.sent().then((res) => {
-      setSentRequests(res.data.requests);
-    }).catch(() => {});
+    api.friends
+      .list()
+      .then((res) => {
+        setFriends(res.data.friends, res.data.pendingCount);
+      })
+      .catch(() => {});
+    api.friends
+      .pending()
+      .then((res) => {
+        setPendingRequests(res.data.requests);
+      })
+      .catch(() => {});
+    api.friends
+      .sent()
+      .then((res) => {
+        setSentRequests(res.data.requests);
+      })
+      .catch(() => {});
   }, [setFriends, setPendingRequests, setSentRequests]);
 
   useEffect(() => {
@@ -341,7 +368,10 @@ export default function LeaderboardScreen() {
       // Sync store so the sent request shows correct state
       refreshFriendsStore();
     } catch {
-      setRequestMsg({ ok: false, text: "Could not send request. Check the number and try again." });
+      setRequestMsg({
+        ok: false,
+        text: "Could not send request. Check the number and try again.",
+      });
     } finally {
       setRequestLoading(false);
     }
@@ -403,7 +433,9 @@ export default function LeaderboardScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* Sheet handle + header */}
-        <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+        <View
+          style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}
+        >
           <View
             style={{
               width: 36,
@@ -453,7 +485,11 @@ export default function LeaderboardScreen() {
 
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60, gap: 24 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 60,
+            gap: 24,
+          }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -899,12 +935,19 @@ export default function LeaderboardScreen() {
                 }}
               >
                 {t.key === "friends" && pendingCount > 0 ? (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
                     <Text
                       style={{
                         fontFamily: "InterTight_600SemiBold",
                         fontSize: 13,
-                        color: activeTab === t.key ? theme.text : theme.textMute,
+                        color:
+                          activeTab === t.key ? theme.text : theme.textMute,
                       }}
                     >
                       {t.label}
@@ -977,7 +1020,9 @@ export default function LeaderboardScreen() {
                 Live rankings unavailable
               </Text>
             </View>
-          ) : !loading && activeTab === "friends" && currentRows.length === 0 ? (
+          ) : !loading &&
+            activeTab === "friends" &&
+            currentRows.length === 0 ? (
             // Friends empty state — two variants
             <View
               style={{
@@ -1011,7 +1056,8 @@ export default function LeaderboardScreen() {
                       letterSpacing: 0.3,
                     }}
                   >
-                    Add friends by phone number to compare scores during the match
+                    Add friends by phone number to compare scores during the
+                    match
                   </Text>
                   <TouchableOpacity
                     onPress={() => setSheetVisible(true)}
@@ -1060,7 +1106,8 @@ export default function LeaderboardScreen() {
                       letterSpacing: 0.3,
                     }}
                   >
-                    Your friends haven't cheered in this match yet — rankings will appear once they do
+                    Your friends haven't cheered in this match yet — rankings
+                    will appear once they do
                   </Text>
                   <TouchableOpacity
                     onPress={() => setSheetVisible(true)}

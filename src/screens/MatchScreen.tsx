@@ -89,6 +89,25 @@ export default function MatchScreen() {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [floaters, setFloaters] = useState<Floater[]>([]);
   const [holdProgress] = useState(0);
+  const [goalCountdown, setGoalCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (eventMode !== "goal") {
+      setGoalCountdown(null);
+      return;
+    }
+    setGoalCountdown(30);
+    const interval = setInterval(() => {
+      setGoalCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [eventMode]);
   const [matchLoading, setMatchLoading] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
 
@@ -221,7 +240,7 @@ export default function MatchScreen() {
   const eventConfig = useMemo(
     () => ({
       goal: {
-        label: "GOAL · DOUBLE ENERGY · 30s",
+        label: `GOAL · DOUBLE ENERGY · ${goalCountdown ?? 30}s`,
         color: theme.accent,
         icon: "bolt",
       },
@@ -236,7 +255,7 @@ export default function MatchScreen() {
         icon: "sparkle",
       },
     }),
-    [theme],
+    [theme, goalCountdown],
   );
 
   return (
