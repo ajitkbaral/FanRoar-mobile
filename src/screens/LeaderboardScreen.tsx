@@ -76,6 +76,7 @@ export default function LeaderboardScreen() {
   const [syncedLabel, setSyncedLabel] = useState("–");
   const [refreshing, setRefreshing] = useState(false);
   const fetchingRef = useRef(false);
+  const syncStartRef = useRef(0);
 
   // Friends sheet state
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -118,7 +119,10 @@ export default function LeaderboardScreen() {
 
       fetchingRef.current = force;
       setLoading(true);
-      if (force) setSyncedLabel("syncing...");
+      if (force) {
+        setSyncedLabel("syncing...");
+        syncStartRef.current = Date.now();
+      }
       setError(null);
 
       try {
@@ -148,10 +152,16 @@ export default function LeaderboardScreen() {
         setRows((prev) => ({ ...prev, [tab]: topList ?? [] }));
         setYou((prev) => ({ ...prev, [tab]: youEntry ?? null }));
         fetched.current.add(tab);
+        const elapsed = Date.now() - syncStartRef.current;
+        if (force && elapsed < 1000) await new Promise(r => setTimeout(r, 1000 - elapsed));
         setSyncedLabel("synced just now");
       } catch {
         setError("Live rankings unavailable");
-        if (force) setSyncedLabel("sync failed");
+        if (force) {
+          const elapsed = Date.now() - syncStartRef.current;
+          if (elapsed < 1000) await new Promise(r => setTimeout(r, 1000 - elapsed));
+          setSyncedLabel("sync failed");
+        }
       } finally {
         setLoading(false);
         if (force) fetchingRef.current = false;
@@ -938,7 +948,7 @@ export default function LeaderboardScreen() {
 
         {/* List area */}
         <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 6 }}>
-          {loading && currentRows.length === 0 ? (
+          {loading && !refreshing && currentRows.length === 0 ? (
             Array.from({ length: 5 }).map((_, i) => (
               <Animated.View
                 key={i}
