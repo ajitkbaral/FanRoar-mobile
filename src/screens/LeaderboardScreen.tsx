@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  RefreshControl,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import Animated, {
@@ -46,6 +47,7 @@ export default function LeaderboardScreen() {
   const theme = buildTheme(isDark, teamCode);
 
   const [activeTab, setActiveTab] = useState<Tab>("global");
+  const activeTabRef = useRef<Tab>("global");
   const [rows, setRows] =
     useState<Record<Tab, ApiLeaderboardEntry[]>>(EMPTY_ROWS);
   const [you, setYou] =
@@ -53,6 +55,12 @@ export default function LeaderboardScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fetched = useRef<Set<Tab>>(new Set());
+  const [syncedLabel, setSyncedLabel] = useState("–");
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   // Clear cache when a new match loads
   useEffect(() => {
@@ -63,10 +71,11 @@ export default function LeaderboardScreen() {
   }, [match?.id]);
 
   const fetchTab = useCallback(
-    async (tab: Tab) => {
-      if (fetched.current.has(tab)) return;
+    async (tab: Tab, force = false) => {
+      if (!force && fetched.current.has(tab)) return;
 
-      setLoading(true);
+      if (!force) setLoading(true);
+      if (force) setSyncedLabel("syncing...");
       setError(null);
 
       try {
@@ -97,18 +106,31 @@ export default function LeaderboardScreen() {
         setRows((prev) => ({ ...prev, [tab]: topList ?? [] }));
         setYou((prev) => ({ ...prev, [tab]: youEntry ?? null }));
         fetched.current.add(tab);
+        setSyncedLabel("synced just now");
       } catch {
         setError("Live rankings unavailable");
+        if (force) setSyncedLabel("sync failed");
       } finally {
-        setLoading(false);
+        if (!force) setLoading(false);
       }
     },
     [match?.id, user?.countryCode],
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchTab(activeTab, true);
+    setRefreshing(false);
+  }, [activeTab, fetchTab]);
+
   useFocusEffect(
     useCallback(() => {
       fetchTab("global");
+      const id = setInterval(
+        () => fetchTab(activeTabRef.current, true),
+        10_000,
+      );
+      return () => clearInterval(id);
     }, [fetchTab]),
   );
 
@@ -245,6 +267,13 @@ export default function LeaderboardScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.textMute}
+          />
+        }
       >
         {/* Top row */}
         <View
@@ -266,7 +295,7 @@ export default function LeaderboardScreen() {
                 letterSpacing: 0.5,
               }}
             >
-              LIVE · synced 2s ago
+              LIVE · {syncedLabel}
             </Text>
           </View>
           <Text
@@ -277,7 +306,7 @@ export default function LeaderboardScreen() {
               letterSpacing: 0.5,
             }}
           >
-            WC 2026
+            {match?.tournament?.shortName?.toUpperCase() ?? "–"}
           </Text>
         </View>
 
