@@ -60,6 +60,7 @@ export default function HomeScreen() {
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
   const [myRank, setMyRank] = useState<number | null>(null);
+  const [recentMatches, setRecentMatches] = useState<ApiMatch[]>([]);
   const [remindedIds, setRemindedIds] = useState<Set<string>>(new Set());
 
   // TODO: wire up expo-notifications — request permissions, schedule a local notification
@@ -80,14 +81,16 @@ export default function HomeScreen() {
 
   const fetchMatches = useCallback(async () => {
     try {
-      const [liveRes, upcomingRes] = await Promise.all([
+      const [liveRes, upcomingRes, recentRes] = await Promise.all([
         api.matches.live(),
         api.matches.upcoming(),
+        api.matches.recent(),
       ]);
       const live = liveRes.data ?? [];
       const upcoming = upcomingRes.data ?? [];
       setLiveMatches(live);
       setUpcomingMatches(upcoming);
+      setRecentMatches(recentRes.data ?? []);
 
       if (userId) {
         const referenceMatchId = live[0]?.matchId ?? upcoming[0]?.matchId;
@@ -95,7 +98,8 @@ export default function HomeScreen() {
           api.profile.history(userId),
           referenceMatchId ? api.leaderboard.global(referenceMatchId, 1) : Promise.resolve(null),
         ]);
-        const energy = (historyRes.data as ApiHistoryEntry[]).reduce(
+        const historyEntries = historyRes.data as ApiHistoryEntry[];
+        const energy = historyEntries.reduce(
           (sum, e) => sum + (e.energyContributed ?? 0),
           0,
         );
@@ -639,6 +643,105 @@ export default function HomeScreen() {
             ))
           )}
         </View>
+
+        {/* Previous matches */}
+        {recentMatches.length > 0 && (
+          <>
+            <View style={{ paddingHorizontal: 20, paddingTop: 18 }}>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 10,
+                  color: theme.textMute,
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                }}
+              >
+                Yesterday
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "InterTight_700Bold",
+                  fontSize: 30,
+                  color: theme.text,
+                  letterSpacing: -1,
+                  lineHeight: 34,
+                }}
+              >
+                Match recap
+              </Text>
+            </View>
+
+            <View style={{ paddingHorizontal: 20, paddingTop: 4, gap: 8 }}>
+              {recentMatches.map((m) => (
+                <TouchableOpacity
+                  key={m.matchId}
+                  onPress={() => navigation.navigate("Recap", { matchId: m.matchId })}
+                  activeOpacity={0.75}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: theme.surface,
+                    borderWidth: 0.5,
+                    borderColor: theme.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "JetBrainsMono_700Bold",
+                      fontSize: 11,
+                      color: theme.textMute,
+                      letterSpacing: 0.4,
+                      width: 22,
+                    }}
+                  >
+                    FT
+                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontFamily: "InterTight_600SemiBold",
+                        fontSize: 14,
+                        color: theme.text,
+                      }}
+                    >
+                      {m.teamA.name} · {m.teamB.name}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "JetBrainsMono_400Regular",
+                        fontSize: 10,
+                        color: theme.textMute,
+                        letterSpacing: 0.4,
+                        marginTop: 2,
+                      }}
+                    >
+                      {m.tournament ? m.tournament.shortName.toUpperCase() : (m.stage?.toUpperCase() ?? "")}
+                      {m.kickoffTime ? ` · ${formatKickoff(m.kickoffTime)}` : ""}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontFamily: "JetBrainsMono_700Bold",
+                      fontSize: 16,
+                      color: theme.text,
+                      letterSpacing: 0.4,
+                      fontVariant: ["tabular-nums"],
+                    }}
+                  >
+                    {m.scores?.teamA ?? 0} — {m.scores?.teamB ?? 0}
+                  </Text>
+                  <FRIcon name="chevron-right" size={14} color={theme.textMute} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Your impact */}
         <View style={{ paddingHorizontal: 20, paddingTop: 18 }}>

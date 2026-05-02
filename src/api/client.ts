@@ -57,6 +57,10 @@ export const api = {
       const res = await client.get<BackendMatch[]>('/matches/upcoming');
       return { ...res, data: res.data.map(mapMatch) };
     },
+    recent: async () => {
+      const res = await client.get<BackendMatch[]>('/matches/recent');
+      return { ...res, data: res.data.map(mapMatch) };
+    },
     byId: async (id: string) => {
       const res = await client.get<BackendMatch>(`/matches/${id}`);
       return { ...res, data: mapMatch(res.data) };

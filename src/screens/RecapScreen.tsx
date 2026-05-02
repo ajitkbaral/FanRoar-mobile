@@ -6,7 +6,7 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, {
-  useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence,
+  useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, cancelAnimation,
 } from 'react-native-reanimated';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
@@ -58,6 +58,7 @@ export default function RecapScreen() {
         .finally(() => {
           if (!cancelled) {
             setLoading(false);
+            cancelAnimation(skeletonOpacity);
             skeletonOpacity.value = 1;
           }
         });
@@ -149,8 +150,75 @@ export default function RecapScreen() {
           </View>
         )}
 
+        {/* No participation state */}
+        {!loading && recap && recap.energyDelivered === 0 && recap.shakeEvents === 0 && recap.tapCombos === 0 && (
+          <View style={{ paddingHorizontal: 20, paddingTop: 60, alignItems: 'center', gap: 12 }}>
+            <View style={{
+              width: 56,
+              height: 56,
+              borderRadius: 18,
+              backgroundColor: theme.surface,
+              borderWidth: 0.5,
+              borderColor: theme.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <FRIcon name="bolt" size={24} color={theme.textMute} />
+            </View>
+            <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 20, color: theme.text, letterSpacing: -0.5, textAlign: 'center' }}>
+              No score for this match
+            </Text>
+            <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: theme.textMute, letterSpacing: 0.4, textAlign: 'center', lineHeight: 18 }}>
+              You weren't in the arena for this one.{'\n'}Jump into the next match to start building your legacy.
+            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Main')}
+              activeOpacity={0.8}
+              style={{
+                marginTop: 8,
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 14,
+                backgroundColor: theme.surface,
+                borderWidth: 0.5,
+                borderColor: theme.border,
+              }}
+            >
+              <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 13, color: theme.text }}>
+                Back to home
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Catch-all: loading resolved but recap is still null (e.g. userId was absent at focus time) */}
+        {!loading && !error && !recap && (
+          <View style={{ paddingHorizontal: 20, paddingTop: 60, alignItems: 'center', gap: 12 }}>
+            <View style={{
+              width: 56, height: 56, borderRadius: 18,
+              backgroundColor: theme.surface, borderWidth: 0.5, borderColor: theme.border,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <FRIcon name="bolt" size={24} color={theme.textMute} />
+            </View>
+            <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 20, color: theme.text, letterSpacing: -0.5, textAlign: 'center' }}>
+              No score for this match
+            </Text>
+            <Text style={{ fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: theme.textMute, letterSpacing: 0.4, textAlign: 'center', lineHeight: 18 }}>
+              You weren't in the arena for this one.{'\n'}Jump into the next match to start building your legacy.
+            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Main')}
+              activeOpacity={0.8}
+              style={{ marginTop: 8, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14, backgroundColor: theme.surface, borderWidth: 0.5, borderColor: theme.border }}
+            >
+              <Text style={{ fontFamily: 'InterTight_700Bold', fontSize: 13, color: theme.text }}>Back to home</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Loaded content */}
-        {!loading && recap && (
+        {!loading && recap && !(recap.energyDelivered === 0 && recap.shakeEvents === 0 && recap.tapCombos === 0) && (
           <>
             {/* Moment card */}
             <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
