@@ -6,6 +6,11 @@ import {
   TouchableOpacity,
   SafeAreaView,
   RefreshControl,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import Animated, {
@@ -18,9 +23,10 @@ import Animated, {
 import { buildTheme } from "../theme";
 import { useUserStore } from "../store/userStore";
 import { useMatchStore } from "../store/matchStore";
+import { useFriendsStore } from "../store/friendsStore";
 import FRLiveDot from "../components/shared/FRLiveDot";
 import { api } from "../api/client";
-import { ApiLeaderboardEntry } from "../api/types";
+import { ApiLeaderboardEntry, ApiFriendRequest, ApiSentRequest } from "../api/types";
 
 type Tab = "global" | "country" | "friends";
 
@@ -45,6 +51,18 @@ export default function LeaderboardScreen() {
   const { isDark, teamCode, user } = useUserStore();
   const { match } = useMatchStore();
   const theme = buildTheme(isDark, teamCode);
+  const {
+    friends,
+    pendingRequests,
+    sentRequests,
+    pendingCount,
+    setFriends,
+    setPendingRequests,
+    setSentRequests,
+    removeFriend: removeFriendFromStore,
+    acceptPending,
+    cancelSent,
+  } = useFriendsStore();
 
   const [activeTab, setActiveTab] = useState<Tab>("global");
   const activeTabRef = useRef<Tab>("global");
@@ -57,6 +75,16 @@ export default function LeaderboardScreen() {
   const fetched = useRef<Set<Tab>>(new Set());
   const [syncedLabel, setSyncedLabel] = useState("–");
   const [refreshing, setRefreshing] = useState(false);
+  const fetchingRef = useRef(false);
+
+  // Friends sheet state
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [requestMsg, setRequestMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -70,16 +98,30 @@ export default function LeaderboardScreen() {
     setError(null);
   }, [match?.id]);
 
+  // Load friends data once on mount
+  useEffect(() => {
+    api.friends.list().then((res) => {
+      setFriends(res.data.friends, res.data.pendingCount);
+    }).catch(() => {});
+    api.friends.pending().then((res) => {
+      setPendingRequests(res.data.requests);
+    }).catch(() => {});
+    api.friends.sent().then((res) => {
+      setSentRequests(res.data.requests);
+    }).catch(() => {});
+  }, []);
+
   const fetchTab = useCallback(
     async (tab: Tab, force = false) => {
       if (!force && fetched.current.has(tab)) return;
+      if (force && fetchingRef.current) return;
 
-      if (!force) setLoading(true);
+      fetchingRef.current = force;
+      setLoading(true);
       if (force) setSyncedLabel("syncing...");
       setError(null);
 
       try {
-        // Resolve matchId from store; if missing, pull the first live match
         let matchId = match?.id;
         if (!matchId) {
           const liveRes = await api.matches.live();
@@ -111,7 +153,8 @@ export default function LeaderboardScreen() {
         setError("Live rankings unavailable");
         if (force) setSyncedLabel("sync failed");
       } finally {
-        if (!force) setLoading(false);
+        setLoading(false);
+        if (force) fetchingRef.current = false;
       }
     },
     [match?.id, user?.countryCode],
@@ -261,8 +304,483 @@ export default function LeaderboardScreen() {
     );
   };
 
+  const refreshFriendsStore = useCallback(() => {
+    api.friends.list().then((res) => {
+      setFriends(res.data.friends, res.data.pendingCount);
+    }).catch(() => {});
+    api.friends.pending().then((res) => {
+      setPendingRequests(res.data.requests);
+    }).catch(() => {});
+    api.friends.sent().then((res) => {
+      setSentRequests(res.data.requests);
+    }).catch(() => {});
+  }, [setFriends, setPendingRequests, setSentRequests]);
+
+  useEffect(() => {
+    if (sheetVisible) refreshFriendsStore();
+  }, [sheetVisible]);
+
+  const handleSendRequest = async () => {
+    if (!phoneInput.trim()) return;
+    setRequestLoading(true);
+    setRequestMsg(null);
+    try {
+      await api.friends.request(phoneInput.trim());
+      setRequestMsg({ ok: true, text: "Friend request sent!" });
+      setPhoneInput("");
+      // Sync store so the sent request shows correct state
+      refreshFriendsStore();
+    } catch {
+      setRequestMsg({ ok: false, text: "Could not send request. Check the number and try again." });
+    } finally {
+      setRequestLoading(false);
+    }
+  };
+
+  const handleAccept = async (req: ApiFriendRequest) => {
+    setAcceptingId(req.id);
+    try {
+      const res = await api.friends.accept(req.id);
+      acceptPending(req.id, res.data);
+      // Sync store counts + immediately reload the friends leaderboard
+      refreshFriendsStore();
+      fetched.current.delete("friends");
+      fetchTab("friends", true);
+    } catch {
+      // silently ignore — will retry on next tap
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
+  const handleCancel = async (req: ApiSentRequest) => {
+    setCancellingId(req.id);
+    try {
+      await api.friends.cancel(req.id);
+      cancelSent(req.id);
+    } catch {
+      // silently ignore
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleRemove = async (friendUserId: string) => {
+    setRemovingId(friendUserId);
+    try {
+      await api.friends.remove(friendUserId);
+      removeFriendFromStore(friendUserId);
+      // Sync store counts + immediately reload the friends leaderboard
+      refreshFriendsStore();
+      fetched.current.delete("friends");
+      fetchTab("friends", true);
+    } catch {
+      // silently ignore
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const renderFriendsSheet = () => (
+    <Modal
+      visible={sheetVisible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setSheetVisible(false)}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: theme.bg }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        {/* Sheet handle + header */}
+        <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+          <View
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: theme.border,
+            }}
+          />
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "InterTight_700Bold",
+              fontSize: 20,
+              color: theme.text,
+            }}
+          >
+            Friends
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setSheetVisible(false);
+              setRequestMsg(null);
+              setPhoneInput("");
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text
+              style={{
+                fontFamily: "InterTight_600SemiBold",
+                fontSize: 17,
+                color: theme.textMute,
+              }}
+            >
+              ✕
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60, gap: 24 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Add by phone */}
+          <View style={{ gap: 10 }}>
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_400Regular",
+                fontSize: 10,
+                color: theme.textMute,
+                letterSpacing: 1.2,
+                textTransform: "uppercase",
+              }}
+            >
+              Add by phone
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TextInput
+                value={phoneInput}
+                onChangeText={setPhoneInput}
+                placeholder="+15551234567"
+                placeholderTextColor={theme.textMute}
+                keyboardType="phone-pad"
+                autoCorrect={false}
+                style={{
+                  flex: 1,
+                  height: 44,
+                  borderRadius: 10,
+                  backgroundColor: theme.surface,
+                  borderWidth: 0.5,
+                  borderColor: theme.border,
+                  paddingHorizontal: 12,
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 13,
+                  color: theme.text,
+                }}
+              />
+              <TouchableOpacity
+                onPress={handleSendRequest}
+                disabled={requestLoading || !phoneInput.trim()}
+                style={{
+                  height: 44,
+                  paddingHorizontal: 16,
+                  borderRadius: 10,
+                  backgroundColor: theme.accent + "20",
+                  borderWidth: 0.5,
+                  borderColor: theme.accent,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: requestLoading || !phoneInput.trim() ? 0.5 : 1,
+                }}
+              >
+                {requestLoading ? (
+                  <ActivityIndicator size="small" color={theme.accent} />
+                ) : (
+                  <Text
+                    style={{
+                      fontFamily: "InterTight_600SemiBold",
+                      fontSize: 13,
+                      color: theme.accent,
+                    }}
+                  >
+                    Send
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            {requestMsg && (
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 11,
+                  color: requestMsg.ok ? theme.success : theme.danger,
+                  letterSpacing: 0.3,
+                }}
+              >
+                {requestMsg.text}
+              </Text>
+            )}
+          </View>
+
+          {/* Pending requests */}
+          {pendingRequests.length > 0 && (
+            <View style={{ gap: 10 }}>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 10,
+                  color: theme.textMute,
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                }}
+              >
+                Pending requests
+              </Text>
+              {pendingRequests.map((req) => (
+                <View
+                  key={req.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: 14,
+                    backgroundColor: theme.surface,
+                    borderWidth: 0.5,
+                    borderColor: theme.border,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontFamily: "InterTight_600SemiBold",
+                        fontSize: 14,
+                        color: theme.text,
+                      }}
+                    >
+                      {req.requesterName}
+                    </Text>
+                    {req.requesterCountryCode && (
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_400Regular",
+                          fontSize: 10,
+                          color: theme.textMute,
+                          letterSpacing: 0.5,
+                          marginTop: 2,
+                        }}
+                      >
+                        {req.requesterCountryCode}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleAccept(req)}
+                    disabled={acceptingId === req.id}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 7,
+                      borderRadius: 8,
+                      backgroundColor: theme.accent + "20",
+                      borderWidth: 0.5,
+                      borderColor: theme.accent,
+                    }}
+                  >
+                    {acceptingId === req.id ? (
+                      <ActivityIndicator size="small" color={theme.accent} />
+                    ) : (
+                      <Text
+                        style={{
+                          fontFamily: "InterTight_600SemiBold",
+                          fontSize: 12,
+                          color: theme.accent,
+                        }}
+                      >
+                        Accept
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Sent requests */}
+          {sentRequests.length > 0 && (
+            <View style={{ gap: 10 }}>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 10,
+                  color: theme.textMute,
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                }}
+              >
+                Sent requests
+              </Text>
+              {sentRequests.map((req) => (
+                <View
+                  key={req.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: 14,
+                    backgroundColor: theme.surface,
+                    borderWidth: 0.5,
+                    borderColor: theme.border,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontFamily: "InterTight_600SemiBold",
+                        fontSize: 14,
+                        color: theme.text,
+                      }}
+                    >
+                      {req.addresseeName}
+                    </Text>
+                    {req.addresseeCountryCode && (
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_400Regular",
+                          fontSize: 10,
+                          color: theme.textMute,
+                          letterSpacing: 0.5,
+                          marginTop: 2,
+                        }}
+                      >
+                        {req.addresseeCountryCode}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleCancel(req)}
+                    disabled={cancellingId === req.id}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 7,
+                      borderRadius: 8,
+                      backgroundColor: theme.surface2,
+                      borderWidth: 0.5,
+                      borderColor: theme.border,
+                    }}
+                  >
+                    {cancellingId === req.id ? (
+                      <ActivityIndicator size="small" color={theme.textMute} />
+                    ) : (
+                      <Text
+                        style={{
+                          fontFamily: "InterTight_600SemiBold",
+                          fontSize: 12,
+                          color: theme.textDim,
+                        }}
+                      >
+                        Cancel
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* My friends */}
+          {friends.length > 0 && (
+            <View style={{ gap: 10 }}>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 10,
+                  color: theme.textMute,
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                }}
+              >
+                My friends · {friends.length}
+              </Text>
+              {friends.map((f) => (
+                <View
+                  key={f.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: 14,
+                    backgroundColor: theme.surface,
+                    borderWidth: 0.5,
+                    borderColor: theme.border,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontFamily: "InterTight_600SemiBold",
+                        fontSize: 14,
+                        color: theme.text,
+                      }}
+                    >
+                      {f.friendName}
+                    </Text>
+                    {f.friendCountryCode && (
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_400Regular",
+                          fontSize: 10,
+                          color: theme.textMute,
+                          letterSpacing: 0.5,
+                          marginTop: 2,
+                        }}
+                      >
+                        {f.friendCountryCode}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleRemove(f.friendUserId)}
+                    disabled={removingId === f.friendUserId}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 7,
+                      borderRadius: 8,
+                      backgroundColor: theme.danger + "15",
+                      borderWidth: 0.5,
+                      borderColor: theme.danger,
+                    }}
+                  >
+                    {removingId === f.friendUserId ? (
+                      <ActivityIndicator size="small" color={theme.danger} />
+                    ) : (
+                      <Text
+                        style={{
+                          fontFamily: "InterTight_600SemiBold",
+                          fontSize: 12,
+                          color: theme.danger,
+                        }}
+                      >
+                        Remove
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      {renderFriendsSheet()}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -370,15 +888,49 @@ export default function LeaderboardScreen() {
                   shadowRadius: 3,
                 }}
               >
-                <Text
-                  style={{
-                    fontFamily: "InterTight_600SemiBold",
-                    fontSize: 13,
-                    color: activeTab === t.key ? theme.text : theme.textMute,
-                  }}
-                >
-                  {t.label}
-                </Text>
+                {t.key === "friends" && pendingCount > 0 ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                    <Text
+                      style={{
+                        fontFamily: "InterTight_600SemiBold",
+                        fontSize: 13,
+                        color: activeTab === t.key ? theme.text : theme.textMute,
+                      }}
+                    >
+                      {t.label}
+                    </Text>
+                    <View
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        backgroundColor: theme.danger,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "JetBrainsMono_700Bold",
+                          fontSize: 9,
+                          color: "#fff",
+                        }}
+                      >
+                        {pendingCount > 9 ? "9+" : String(pendingCount)}
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <Text
+                    style={{
+                      fontFamily: "InterTight_600SemiBold",
+                      fontSize: 13,
+                      color: activeTab === t.key ? theme.text : theme.textMute,
+                    }}
+                  >
+                    {t.label}
+                  </Text>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -414,6 +966,117 @@ export default function LeaderboardScreen() {
               >
                 Live rankings unavailable
               </Text>
+            </View>
+          ) : !loading && activeTab === "friends" && currentRows.length === 0 ? (
+            // Friends empty state — two variants
+            <View
+              style={{
+                alignItems: "center",
+                paddingVertical: 40,
+                paddingHorizontal: 24,
+                gap: 12,
+              }}
+            >
+              <Text style={{ fontSize: 36 }}>👥</Text>
+              {friends.length === 0 ? (
+                <>
+                  <Text
+                    style={{
+                      fontFamily: "InterTight_700Bold",
+                      fontSize: 22,
+                      color: theme.text,
+                      textAlign: "center",
+                      letterSpacing: -0.5,
+                    }}
+                  >
+                    See how your crew ranks
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "JetBrainsMono_400Regular",
+                      fontSize: 12,
+                      color: theme.textMute,
+                      textAlign: "center",
+                      lineHeight: 18,
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    Add friends by phone number to compare scores during the match
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setSheetVisible(true)}
+                    activeOpacity={0.7}
+                    style={{
+                      marginTop: 8,
+                      paddingHorizontal: 24,
+                      paddingVertical: 14,
+                      borderRadius: 14,
+                      backgroundColor: theme.accent + "20",
+                      borderWidth: 0.5,
+                      borderColor: theme.accent,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "InterTight_600SemiBold",
+                        fontSize: 15,
+                        color: theme.accent,
+                      }}
+                    >
+                      Add Friends
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text
+                    style={{
+                      fontFamily: "InterTight_700Bold",
+                      fontSize: 22,
+                      color: theme.text,
+                      textAlign: "center",
+                      letterSpacing: -0.5,
+                    }}
+                  >
+                    No scores yet
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "JetBrainsMono_400Regular",
+                      fontSize: 12,
+                      color: theme.textMute,
+                      textAlign: "center",
+                      lineHeight: 18,
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    Your friends haven't cheered in this match yet — rankings will appear once they do
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setSheetVisible(true)}
+                    activeOpacity={0.7}
+                    style={{
+                      marginTop: 8,
+                      paddingHorizontal: 24,
+                      paddingVertical: 14,
+                      borderRadius: 14,
+                      backgroundColor: theme.surface,
+                      borderWidth: 0.5,
+                      borderColor: theme.border,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "InterTight_600SemiBold",
+                        fontSize: 15,
+                        color: theme.textDim,
+                      }}
+                    >
+                      Manage Friends
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           ) : (
             currentRows.map((r, i) => renderRow(r, r.code + i))
@@ -462,6 +1125,33 @@ export default function LeaderboardScreen() {
               </View>
               {renderRow({ ...currentYou, isYou: true }, "you-card")}
             </>
+          )}
+
+          {/* Manage friends button — shown when the leaderboard has entries */}
+          {activeTab === "friends" && currentRows.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSheetVisible(true)}
+              activeOpacity={0.7}
+              style={{
+                marginTop: 8,
+                padding: 12,
+                borderRadius: 14,
+                backgroundColor: theme.surface,
+                borderWidth: 0.5,
+                borderColor: theme.border,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "InterTight_600SemiBold",
+                  fontSize: 13,
+                  color: theme.textDim,
+                }}
+              >
+                Manage Friends
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </ScrollView>

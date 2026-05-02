@@ -1,6 +1,18 @@
 import axios from 'axios';
 import { useUserStore } from '../store/userStore';
-import { mapMatch, BackendMatch, LeaderboardResponse, type ApiRecap, type MiniGameSubmitRequest, type XpUpdatePayload } from './types';
+import {
+  mapMatch,
+  BackendMatch,
+  LeaderboardResponse,
+  ApiFriendsListResponse,
+  ApiFriendRequest,
+  ApiFriendship,
+  ApiFriendRequestResponse,
+  ApiSentRequest,
+  type ApiRecap,
+  type MiniGameSubmitRequest,
+  type XpUpdatePayload,
+} from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION ?? 'v1';
@@ -69,6 +81,22 @@ export const api = {
   miniGames: {
     submit: (data: MiniGameSubmitRequest) =>
       client.post<XpUpdatePayload>('/mini-games/submit', data),
+  },
+  friends: {
+    list: () =>
+      client.get<ApiFriendsListResponse>('/friends'),
+    pending: () =>
+      client.get<{ requests: ApiFriendRequest[] }>('/friends/pending'),
+    sent: () =>
+      client.get<{ requests: ApiSentRequest[] }>('/friends/sent'),
+    request: (phone: string) =>
+      client.post<ApiFriendRequestResponse>('/friends/request', { phone }),
+    accept: (friendshipId: string) =>
+      client.patch<ApiFriendship>(`/friends/${friendshipId}/accept`),
+    cancel: (friendshipId: string) =>
+      client.delete(`/friends/${friendshipId}/cancel`),
+    remove: (friendUserId: string) =>
+      client.delete(`/friends/${friendUserId}`),
   },
 };
 

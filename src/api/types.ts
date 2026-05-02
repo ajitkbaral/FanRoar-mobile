@@ -122,6 +122,43 @@ export interface LeaderboardResponse {
   you: ApiLeaderboardEntry | null;
 }
 
+export type FriendshipStatus = 'PENDING' | 'ACCEPTED';
+
+export interface ApiFriendship {
+  id: string;
+  friendUserId: string;
+  friendName: string;
+  friendCountryCode: string | null;
+  status: FriendshipStatus;
+  createdAt: string;
+}
+
+export interface ApiFriendRequest {
+  id: string;
+  requesterUserId: string;
+  requesterName: string;
+  requesterCountryCode: string | null;
+  createdAt: string;
+}
+
+export interface ApiFriendsListResponse {
+  friends: ApiFriendship[];
+  pendingCount: number;
+}
+
+export interface ApiSentRequest {
+  id: string;
+  addresseeUserId: string;
+  addresseeName: string;
+  addresseeCountryCode: string | null;
+  createdAt: string;
+}
+
+export interface ApiFriendRequestResponse {
+  friendship: ApiFriendship;
+  message: string;
+}
+
 export interface ApiHistoryEntry {
   matchId: string;
   energyContributed: number;
