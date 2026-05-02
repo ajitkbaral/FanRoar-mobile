@@ -89,14 +89,19 @@ export const useUserStore = create<UserState>()(
       setDisplayName: (displayName) => set({ displayName }),
       setPhone: (phone) => set({ phone }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
-      logout: () => set({
-        user: null,
-        token: null,
-        userId: null,
-        displayName: '',
-        phone: '',
-        hasCompletedOnboarding: false,
-      }),
+      logout: () => {
+        AsyncStorage.removeItem('fanroar-user');
+        set({
+          user: null,
+          token: null,
+          userId: null,
+          displayName: '',
+          phone: '',
+          hasCompletedOnboarding: false,
+          pendingLevelUp: false,
+          pendingLevelUpLevel: 1,
+        });
+      },
       applyXpUpdate: (update) => set((s) => ({
         user: s.user ? { ...s.user, xp: update.xpInBand, level: update.level } : s.user,
         pendingLevelUp: update.leveledUp ? true : s.pendingLevelUp,
