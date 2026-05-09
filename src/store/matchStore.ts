@@ -21,6 +21,7 @@ export interface Match {
   teamB: MatchTeam;
   status: 'live' | 'halftime' | 'upcoming' | 'finished';
   minute?: number;
+  half?: 1 | 2;
   stage?: string;
   tournament?: { name: string; shortName: string; logoUrl?: string };
 }
@@ -63,8 +64,9 @@ export const useMatchStore = create<MatchState>((set) => ({
 
   setMatch: (match) => set((s) => {
     const sameMatch = s.match?.id === match.id;
+    const initialHalf: 1 | 2 = (match.minute ?? 0) > 45 ? 2 : 1;
     return {
-      match,
+      match: { ...match, half: sameMatch ? (s.match?.half ?? initialHalf) : initialHalf },
       lastMatchId: match.id,
       scoreA: sameMatch ? s.scoreA : 0,
       scoreB: sameMatch ? s.scoreB : 0,
@@ -74,7 +76,13 @@ export const useMatchStore = create<MatchState>((set) => ({
       completedMiniGames: sameMatch ? s.completedMiniGames : [],
     };
   }),
-  setMatchStatus: (status) => set((s) => ({ match: s.match ? { ...s.match, status } : null })),
+  setMatchStatus: (status) => set((s) => ({
+    match: s.match ? {
+      ...s.match,
+      status,
+      half: s.match.status === 'halftime' && status === 'live' ? 2 : s.match.half,
+    } : null,
+  })),
   setScores: (scoreA, scoreB) => set({ scoreA, scoreB }),
   setMomentum: (momentum) => set((s) => ({
     momentum: Math.max(0, Math.min(100, typeof momentum === 'function' ? momentum(s.momentum) : momentum)),

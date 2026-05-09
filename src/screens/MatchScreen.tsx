@@ -42,11 +42,12 @@ interface Floater {
   x: number;
 }
 
-function matchStatusLabel(status: string, minute?: number): string {
+function matchStatusLabel(status: string, minute?: number, half?: 1 | 2): string {
   if (status === "halftime") return "HALF TIME";
   if (status !== "live") return status.toUpperCase();
-  const half = (minute ?? 0) > 45 ? "2ND HALF" : "1ST HALF";
-  return minute != null ? `LIVE · ${half} · ${minute}'` : `LIVE · ${half}`;
+  const halfNum = half ?? ((minute ?? 0) > 45 ? 2 : 1);
+  const halfLabel = halfNum === 2 ? "2ND HALF" : "1ST HALF";
+  return minute != null ? `LIVE · ${halfLabel} · ${minute}'` : `LIVE · ${halfLabel}`;
 }
 
 export default function MatchScreen() {
@@ -247,7 +248,7 @@ export default function MatchScreen() {
   };
 
   const stageLabel = match?.stage?.toUpperCase() ?? "—";
-  const statusLabel = matchStatusLabel(match?.status ?? "live", match?.minute);
+  const statusLabel = matchStatusLabel(match?.status ?? "live", match?.minute, match?.half);
 
   const supportingTeam =
     supportingTeamId === match?.teamA.id
