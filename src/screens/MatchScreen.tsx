@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  Animated,
 } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,6 +17,7 @@ import { useUserStore } from "../store/userStore";
 import { useMatchStore } from "../store/matchStore";
 import { useEnergyStore } from "../store/energyStore";
 import { useShakeDetector } from "../hooks/useShakeDetector";
+import { useDemoMode } from "../hooks/useDemoMode";
 import { useEnergyEngine } from "../hooks/useEnergyEngine";
 import { useMatchSocket } from "../hooks/useMatchSocket";
 import TugOfWarBar from "../components/TugOfWarBar";
@@ -70,9 +72,15 @@ export default function MatchScreen() {
     resetMatch,
   } = useMatchStore();
 
-  // Prefer route params; fall back to the match already in the store so that
-  // tapping the Match tab directly (no params) still rejoins the socket room.
-  const matchId = route.params?.matchId ?? match?.id ?? null;
+  // isDemo: no real matchId in route params → show simulation
+  const isDemo = !route.params?.matchId;
+
+  // Guard: '__demo__' must never reach useMatchSocket
+  const matchId = route.params?.matchId
+    ?? (match?.id === "__demo__" ? null : match?.id)
+    ?? null;
+
+  useDemoMode(isDemo);
 
   useEffect(() => {
     if (match?.status === "halftime") setEventMode("halftime");
@@ -112,6 +120,17 @@ export default function MatchScreen() {
     }, 1000);
     return () => clearInterval(interval);
   }, [eventMode]);
+  const tooltipOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isDemo) return;
+    Animated.sequence([
+      Animated.timing(tooltipOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(2400),
+      Animated.timing(tooltipOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, [isDemo]);
+
   const [matchLoading, setMatchLoading] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
 
@@ -238,8 +257,9 @@ export default function MatchScreen() {
         : null;
 
   // Force-show the picker if a match is loaded but no team has been chosen yet.
+  // Never show in demo mode — useDemoMode auto-assigns the supporting team.
   const showTeamPicker =
-    !!match && !matchLoading && (pickerVisible || !supportingTeamId);
+    !isDemo && !!match && !matchLoading && (pickerVisible || !supportingTeamId);
 
   const eventConfig = useMemo(
     () => ({
@@ -315,8 +335,31 @@ export default function MatchScreen() {
               {statusLabel}
               {stageLabel ? ` · ${stageLabel}` : ""}
             </Text>
+            {isDemo && (
+              <View
+                style={{
+                  paddingVertical: 2,
+                  paddingHorizontal: 8,
+                  borderRadius: 6,
+                  backgroundColor: theme.warning + "25",
+                  borderWidth: 1,
+                  borderColor: theme.warning + "60",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "JetBrainsMono_700Bold",
+                    fontSize: 9,
+                    color: theme.warning,
+                    letterSpacing: 1,
+                  }}
+                >
+                  DEMO
+                </Text>
+              </View>
+            )}
           </View>
-          {match ? (
+          {match && !isDemo ? (
             <TouchableOpacity
               onPress={handleLeave}
               activeOpacity={0.7}
@@ -342,7 +385,7 @@ export default function MatchScreen() {
                 LEAVE
               </Text>
             </TouchableOpacity>
-          ) : (
+          ) : isDemo ? null : (
             <Text
               style={{
                 fontFamily: "JetBrainsMono_400Regular",
@@ -456,18 +499,20 @@ export default function MatchScreen() {
             >
               YOU'RE ROOTING FOR {supportingTeam.code}
             </Text>
-            <TouchableOpacity onPress={() => setPickerVisible(true)}>
-              <Text
-                style={{
-                  fontFamily: "JetBrainsMono_400Regular",
-                  fontSize: 10,
-                  color: theme.textMute,
-                  letterSpacing: 0.5,
-                }}
-              >
-                · CHANGE
-              </Text>
-            </TouchableOpacity>
+            {!isDemo && (
+              <TouchableOpacity onPress={() => setPickerVisible(true)}>
+                <Text
+                  style={{
+                    fontFamily: "JetBrainsMono_400Regular",
+                    fontSize: 10,
+                    color: theme.textMute,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  · CHANGE
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -549,7 +594,87 @@ export default function MatchScreen() {
           role={fanRole as FanRole}
           onActivate={handlePowerup}
         />
+
+        {/* Demo CTA — navigate to Home to find a real match */}
+        {isDemo && (
+          <TouchableOpacity
+            onPress={() => (navigation as any).navigate("Home")}
+            activeOpacity={0.85}
+            style={{
+              marginHorizontal: 20,
+              marginTop: 8,
+              marginBottom: 8,
+              padding: 16,
+              borderRadius: 16,
+              backgroundColor: theme.accent + "15",
+              borderWidth: 1,
+              borderColor: theme.accent + "40",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_700Bold",
+                  fontSize: 12,
+                  color: theme.accent,
+                  letterSpacing: 0.8,
+                }}
+              >
+                BROWSE LIVE MATCHES
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 10,
+                  color: theme.textMute,
+                  letterSpacing: 0.4,
+                  marginTop: 2,
+                }}
+              >
+                Join a real match to compete
+              </Text>
+            </View>
+            <FRIcon name="chevron-right" size={18} color={theme.accent} />
+          </TouchableOpacity>
+        )}
       </ScrollView>
+
+      {/* Demo tooltip — fades in on mount, auto-hides after ~3s */}
+      {isDemo && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            bottom: 160,
+            alignSelf: "center",
+            opacity: tooltipOpacity,
+            backgroundColor: theme.surface2,
+            borderRadius: 12,
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            borderWidth: 1,
+            borderColor: theme.borderStrong,
+            shadowColor: theme.accent,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "JetBrainsMono_700Bold",
+              fontSize: 12,
+              color: theme.accent,
+              letterSpacing: 1.5,
+            }}
+          >
+            SHAKE TO CHEER
+          </Text>
+        </Animated.View>
+      )}
 
       {/* Team picker overlay — blocks interaction until a team is chosen */}
       {showTeamPicker && (
