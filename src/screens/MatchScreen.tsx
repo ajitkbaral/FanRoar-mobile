@@ -145,8 +145,8 @@ export default function MatchScreen() {
 
         setMatch({
           id: m.matchId,
-          teamA: m.teamA,
-          teamB: m.teamB,
+          teamA: { ...m.teamA, color: m.teamAColor ?? undefined },
+          teamB: { ...m.teamB, color: m.teamBColor ?? undefined },
           status: m.status,
           minute: m.minute,
           stage: m.stage,
@@ -228,7 +228,7 @@ export default function MatchScreen() {
 
   const teamACode = match?.teamA.code ?? theme.teamCode;
   const teamAName = match?.teamA.name ?? theme.teamName;
-  const teamAColor = match?.teamAColor ?? TEAM_PALETTES[teamACode]?.primary ?? theme.accent;
+  const teamAColor = match?.teamA.color ?? TEAM_PALETTES[teamACode]?.primary ?? theme.accent;
   const teamA = {
     code: teamACode,
     color: teamAColor,
@@ -238,7 +238,7 @@ export default function MatchScreen() {
 
   const teamBCode = match?.teamB.code ?? "OPP";
   const teamBName = match?.teamB.name ?? "Opponent";
-  const teamBColor = match?.teamBColor ?? TEAM_PALETTES[teamBCode]?.primary ?? theme.surface2;
+  const teamBColor = match?.teamB.color ?? TEAM_PALETTES[teamBCode]?.primary ?? theme.surface2;
   const teamB = {
     code: teamBCode,
     color: teamBColor,

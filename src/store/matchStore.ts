@@ -12,6 +12,7 @@ export interface MatchTeam {
   code: string;
   name: string;
   flagUrl?: string;
+  color?: string;
 }
 
 export interface Match {
