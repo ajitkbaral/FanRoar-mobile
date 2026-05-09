@@ -1151,7 +1151,8 @@ export default function LeaderboardScreen() {
           {!loading &&
             !error &&
             (activeTab === "global" || activeTab === "country") &&
-            currentRows.length === 0 && (
+            currentRows.length === 0 &&
+            !currentYou && (
               <View
                 style={{
                   alignItems: "center",
