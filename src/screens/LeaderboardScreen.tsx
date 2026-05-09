@@ -152,6 +152,14 @@ export default function LeaderboardScreen() {
           return;
         }
 
+        if (matchId === "__demo__") {
+          setRows((prev) => ({ ...prev, [tab]: [] }));
+          setYou((prev) => ({ ...prev, [tab]: null }));
+          fetched.current.add(tab);
+          setSyncedLabel("–");
+          return;
+        }
+
         let res;
         if (tab === "global") {
           res = await api.leaderboard.global(matchId);
