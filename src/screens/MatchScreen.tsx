@@ -9,7 +9,7 @@ import {
   Image,
   Animated,
 } from "react-native";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation";
 import { buildTheme } from "../theme";
@@ -78,6 +78,8 @@ export default function MatchScreen() {
   const matchId = route.params?.matchId ?? joinedMatchId ?? null;
   const isDemo = !matchId;
 
+  const { myEnergy, combo, activePowerup, usedPowerups, activatePowerup, initUsedPowerups, resetEnergy } = useEnergyStore();
+
   useDemoMode(isDemo);
 
   useEffect(() => {
@@ -91,10 +93,10 @@ export default function MatchScreen() {
       const side: 'A' | 'B' | undefined =
         supportingTeamId === match.teamB.id ? 'B' : supportingTeamId ? 'A' : undefined;
       resetMatch();
+      resetEnergy();
       navigation.replace("Recap", { matchId: id, supportingTeamSide: side });
     }
   }, [match?.status, match?.id, matchId]);
-  const { myEnergy, combo, activePowerup, activatePowerup } = useEnergyStore();
 
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [floaters, setFloaters] = useState<Floater[]>([]);
@@ -155,11 +157,21 @@ export default function MatchScreen() {
         setScores(m.scores.teamA, m.scores.teamB);
         if (m.momentumRatio != null)
           setMomentum(Math.round(m.momentumRatio * 100));
+        initUsedPowerups(m.usedPowerups);
         if (!supportingTeamId) setPickerVisible(true);
       })
       .catch(() => {})
       .finally(() => setMatchLoading(false));
   }, [matchId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!matchId) return;
+      api.matches.byId(matchId).then((res) => {
+        initUsedPowerups(res.data.usedPowerups);
+      }).catch(() => {});
+    }, [matchId, initUsedPowerups]),
+  );
 
   const { emitEnergy: socketEmit, activatePowerUp, leaveRoom } = useMatchSocket(
     matchId,
@@ -169,10 +181,11 @@ export default function MatchScreen() {
   const handleLeave = useCallback(() => {
     leaveRoom();
     resetMatch();
+    resetEnergy();
     // Clear the stale matchId param so rejoining the same match re-triggers useEffect
     (navigation as any).setParams({ matchId: undefined });
     (navigation as any).navigate("Home");
-  }, [leaveRoom, resetMatch, navigation]);
+  }, [leaveRoom, resetMatch, resetEnergy, navigation]);
 
   const { emitEnergy, getMultiplierDisplay } = useEnergyEngine({
     role: fanRole as FanRole,
@@ -591,6 +604,7 @@ export default function MatchScreen() {
         <PowerUpPanel
           theme={theme}
           activePowerup={activePowerup}
+          usedPowerups={usedPowerups}
           role={fanRole as FanRole}
           onActivate={handlePowerup}
         />

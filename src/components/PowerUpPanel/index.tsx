@@ -1,55 +1,27 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { Theme } from "../../theme";
 import FRIcon from "../shared/FRIcon";
 import { PowerUpType, FanRole } from "../../utils/constants";
 
-interface PowerUp {
-  key: PowerUpType;
-  icon: string;
-  label: string;
-  sub: string;
-  ready: boolean;
-  cd: string;
-}
-
 interface Props {
   theme: Theme;
   activePowerup: PowerUpType | null;
+  usedPowerups: Partial<Record<PowerUpType, true>>;
   role: FanRole;
   onActivate: (type: PowerUpType) => void;
 }
 
-const POWERUPS: PowerUp[] = [
-  {
-    key: "mega",
-    icon: "bolt",
-    label: "Mega Cheer",
-    sub: "10×, 10s",
-    ready: false,
-    cd: "60m",
-  },
-  {
-    key: "shield",
-    icon: "shield",
-    label: "Shield",
-    sub: "Block 5s",
-    ready: false,
-    cd: "45m",
-  },
-  {
-    key: "steal",
-    icon: "fire",
-    label: "Steal Momentum",
-    sub: "5% from rival",
-    ready: false,
-    cd: "2m",
-  },
+const POWERUPS: { key: PowerUpType; icon: string; label: string; sub: string }[] = [
+  { key: "mega",   icon: "bolt",   label: "Mega Cheer",      sub: "10×  ·  10s" },
+  { key: "shield", icon: "shield", label: "Shield",          sub: "Block  ·  5s" },
+  { key: "steal",  icon: "fire",   label: "Steal Momentum",  sub: "5% from rival" },
 ];
 
 export default function PowerUpPanel({
   theme,
   activePowerup,
+  usedPowerups,
   role,
   onActivate,
 }: Props) {
@@ -65,34 +37,37 @@ export default function PowerUpPanel({
           marginBottom: 8,
         }}
       >
-        Power-Ups
+        Power-Ups · 1× per match
       </Text>
       <View style={{ flexDirection: "row", gap: 8 }}>
         {POWERUPS.map((p) => {
           const isActive = activePowerup === p.key;
+          const isUsed = !!usedPowerups[p.key];
+          const canPress = !isActive && !isUsed;
+
           return (
             <TouchableOpacity
               key={p.key}
-              onPress={() =>
-                p.ready
-                  ? onActivate(p.key)
-                  : Alert.alert('Coming Soon', 'Power-ups are not available yet. Stay tuned!')
-              }
-              activeOpacity={p.ready ? 0.8 : 1}
+              onPress={() => canPress && onActivate(p.key)}
+              activeOpacity={canPress ? 0.8 : 1}
               style={{
                 flex: 1,
                 padding: 10,
                 borderRadius: 14,
-                backgroundColor: isActive ? theme.accent : theme.surface,
-                borderWidth: 0.5,
+                backgroundColor: isActive
+                  ? theme.accent
+                  : isUsed
+                    ? theme.surface2
+                    : theme.surface,
+                borderWidth: isActive ? 1.5 : 0.5,
                 borderColor: isActive ? theme.accent : theme.border,
-                opacity: p.ready ? 1 : 0.5,
+                opacity: isUsed ? 0.45 : 1,
               }}
             >
               <FRIcon
-                name={p.icon}
+                name={isUsed ? "check" : p.icon}
                 size={18}
-                color={isActive ? theme.bg : theme.text}
+                color={isActive ? theme.bg : isUsed ? theme.textMute : theme.text}
                 strokeWidth={2}
               />
               <Text
@@ -100,7 +75,7 @@ export default function PowerUpPanel({
                   marginTop: 6,
                   fontFamily: "InterTight_700Bold",
                   fontSize: 12,
-                  color: isActive ? theme.bg : theme.text,
+                  color: isActive ? theme.bg : isUsed ? theme.textMute : theme.text,
                 }}
               >
                 {p.label}
@@ -114,7 +89,7 @@ export default function PowerUpPanel({
                   letterSpacing: 0.4,
                 }}
               >
-                {p.ready ? p.sub : "CD " + p.cd}
+                {isUsed ? "USED" : isActive ? "ACTIVE" : p.sub}
               </Text>
             </TouchableOpacity>
           );

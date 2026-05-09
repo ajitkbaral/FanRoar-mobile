@@ -13,12 +13,14 @@ interface EnergyState {
   combo: number;
   activePowerup: PowerUpType | null;
   powerupState: PowerUpState | null;
-  cooldowns: Partial<Record<PowerUpType, number>>;
+  usedPowerups: Partial<Record<PowerUpType, true>>;
 
   addEnergy: (amount: number) => void;
   setCombo: (combo: number | ((prev: number) => number)) => void;
   activatePowerup: (type: PowerUpType) => void;
   deactivatePowerup: () => void;
+  initUsedPowerups: (types: PowerUpType[]) => void;
+  resetEnergy: () => void;
   resetSession: () => void;
 }
 
@@ -27,7 +29,7 @@ export const useEnergyStore = create<EnergyState>((set, get) => ({
   combo: 0,
   activePowerup: null,
   powerupState: null,
-  cooldowns: {},
+  usedPowerups: {},
 
   addEnergy: (amount) => set((s) => ({ myEnergy: s.myEnergy + amount })),
 
@@ -36,22 +38,18 @@ export const useEnergyStore = create<EnergyState>((set, get) => ({
   })),
 
   activatePowerup: (type) => {
+    if (get().usedPowerups[type]) return; // one-per-match guard
     const now = Date.now();
     const durations: Record<PowerUpType, number> = {
       mega:   POWER_UPS.MEGA_CHEER_DURATION_MS,
       shield: POWER_UPS.SHIELD_DURATION_MS,
       steal:  3000,
     };
-    const cooldownMs: Record<PowerUpType, number> = {
-      mega:   POWER_UPS.MEGA_CHEER_COOLDOWN_MS,
-      shield: POWER_UPS.SHIELD_COOLDOWN_MS,
-      steal:  POWER_UPS.STEAL_COOLDOWN_MS,
-    };
-    set({
+    set((s) => ({
       activePowerup: type,
       powerupState: { type, activatedAt: now, durationMs: durations[type] },
-      cooldowns: { ...get().cooldowns, [type]: now + cooldownMs[type] },
-    });
+      usedPowerups: { ...s.usedPowerups, [type]: true },
+    }));
     setTimeout(() => {
       set({ activePowerup: null, powerupState: null });
     }, durations[type]);
@@ -59,5 +57,15 @@ export const useEnergyStore = create<EnergyState>((set, get) => ({
 
   deactivatePowerup: () => set({ activePowerup: null, powerupState: null }),
 
-  resetSession: () => set({ myEnergy: 0, combo: 0, activePowerup: null, powerupState: null }),
+  initUsedPowerups: (types) => {
+    const map: Partial<Record<PowerUpType, true>> = {};
+    for (const t of types) map[t] = true;
+    set({ usedPowerups: map });
+  },
+
+  // Resets only interactive state — usedPowerups is server-tracked and
+  // must not be cleared here; initUsedPowerups restores it on rejoin.
+  resetEnergy: () => set({ myEnergy: 0, combo: 0, activePowerup: null, powerupState: null }),
+
+  resetSession: () => set({ myEnergy: 0, combo: 0, activePowerup: null, powerupState: null, usedPowerups: {} }),
 }));

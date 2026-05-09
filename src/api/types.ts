@@ -1,3 +1,5 @@
+export type MobilePowerUpType = 'mega' | 'shield' | 'steal';
+
 export interface ApiMatch {
   matchId: string;
   teamA: { id: string; code: string; name: string; flagUrl?: string };
@@ -11,6 +13,7 @@ export interface ApiMatch {
   tournament?: { name: string; shortName: string; logoUrl?: string };
   teamAColor?: string | null;
   teamBColor?: string | null;
+  usedPowerups: MobilePowerUpType[];
 }
 
 // Raw Prisma shapes returned by the backend
@@ -33,6 +36,12 @@ interface _BackendTournament {
   logoUrl?: string | null;
 }
 
+const BACKEND_TO_MOBILE_POWERUP: Record<string, MobilePowerUpType> = {
+  MEGA_CHEER:    'mega',
+  DOUBLE_ENERGY: 'shield',
+  TEAM_BOOST:    'steal',
+};
+
 export interface BackendMatch {
   id: string;
   teamA: _BackendTeam;
@@ -46,6 +55,7 @@ export interface BackendMatch {
   teamBColor?: string | null;
   matchTotals?: _BackendMatchTotal[];
   tournament?: _BackendTournament | null;
+  usedPowerups?: string[];
 }
 
 export function mapMatchStatus(s: string): ApiMatch['status'] {
@@ -71,6 +81,9 @@ export function mapMatch(m: BackendMatch): ApiMatch {
       : undefined,
     teamAColor: m.teamAColor ?? null,
     teamBColor: m.teamBColor ?? null,
+    usedPowerups: (m.usedPowerups ?? [])
+      .map((t) => BACKEND_TO_MOBILE_POWERUP[t])
+      .filter((t): t is MobilePowerUpType => !!t),
   };
 }
 

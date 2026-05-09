@@ -162,7 +162,9 @@ export function useMatchSocket(
   );
 
   const POWERUP_BACKEND_TYPE: Record<string, string> = {
-    mega: 'MEGA_CHEER',
+    mega:   'MEGA_CHEER',
+    shield: 'DOUBLE_ENERGY',
+    steal:  'TEAM_BOOST',
   };
 
   const activatePowerUp = useCallback(
@@ -170,7 +172,15 @@ export function useMatchSocket(
       if (!matchId) return;
       const backendType = POWERUP_BACKEND_TYPE[powerUpType];
       if (!backendType) return;
-      socketRef.current.emit("activate_powerup", { type: backendType });
+      socketRef.current.emit(
+        "activate_powerup",
+        { matchId, type: backendType },
+        (res: { ok: boolean; error?: string }) => {
+          if (!res?.ok) {
+            LOG("activate_powerup rejected by server:", res?.error);
+          }
+        },
+      );
     },
     [matchId],
   );
