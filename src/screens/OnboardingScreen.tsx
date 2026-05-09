@@ -1,20 +1,25 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from "react";
 import {
-  View, Text, TouchableOpacity, ScrollView,
-  TextInput, KeyboardAvoidingView, Platform,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation';
-import { buildTheme, Theme } from '../theme';
-import { useUserStore } from '../store/userStore';
-import { FanRole } from '../utils/constants';
-import { api } from '../api/client';
-import FRMark from '../components/shared/FRMark';
-import FRIcon from '../components/shared/FRIcon';
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation";
+import { buildTheme, Theme } from "../theme";
+import { useUserStore } from "../store/userStore";
+import { FanRole } from "../utils/constants";
+import { api } from "../api/client";
+import FRMark from "../components/shared/FRMark";
+import FRIcon from "../components/shared/FRIcon";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
+type Props = NativeStackScreenProps<RootStackParamList, "Onboarding">;
 
 // ─── Countries ───────────────────────────────────────────────────────────────
 
@@ -26,16 +31,17 @@ interface Country {
 }
 
 const COUNTRIES: Country[] = [
-  { code: 'BR', dial: '+55', name: 'Brazil',         emoji: '🇧🇷' },
-  { code: 'AR', dial: '+54', name: 'Argentina',      emoji: '🇦🇷' },
-  { code: 'US', dial: '+1',  name: 'United States',  emoji: '🇺🇸' },
-  { code: 'GB', dial: '+44', name: 'United Kingdom', emoji: '🇬🇧' },
-  { code: 'IN', dial: '+91', name: 'India',          emoji: '🇮🇳' },
-  { code: 'DE', dial: '+49', name: 'Germany',        emoji: '🇩🇪' },
-  { code: 'FR', dial: '+33', name: 'France',         emoji: '🇫🇷' },
-  { code: 'ES', dial: '+34', name: 'Spain',          emoji: '🇪🇸' },
-  { code: 'MX', dial: '+52', name: 'Mexico',         emoji: '🇲🇽' },
-  { code: 'JP', dial: '+81', name: 'Japan',          emoji: '🇯🇵' },
+  { code: "US", dial: "+1", name: "United States", emoji: "🇺🇸" },
+  { code: "BR", dial: "+55", name: "Brazil", emoji: "🇧🇷" },
+  { code: "AR", dial: "+54", name: "Argentina", emoji: "🇦🇷" },
+
+  { code: "GB", dial: "+44", name: "United Kingdom", emoji: "🇬🇧" },
+  { code: "IN", dial: "+91", name: "India", emoji: "🇮🇳" },
+  { code: "DE", dial: "+49", name: "Germany", emoji: "🇩🇪" },
+  { code: "FR", dial: "+33", name: "France", emoji: "🇫🇷" },
+  { code: "ES", dial: "+34", name: "Spain", emoji: "🇪🇸" },
+  { code: "MX", dial: "+52", name: "Mexico", emoji: "🇲🇽" },
+  { code: "JP", dial: "+81", name: "Japan", emoji: "🇯🇵" },
 ];
 
 // ─── Shared: StepHeader ───────────────────────────────────────────────────────
@@ -50,78 +56,106 @@ interface StepHeaderProps {
   topInset: number;
 }
 
-function StepHeader({ theme, step, total, onBack, title, sub, topInset }: StepHeaderProps) {
+function StepHeader({
+  theme,
+  step,
+  total,
+  onBack,
+  title,
+  sub,
+  topInset,
+}: StepHeaderProps) {
   return (
     <>
-      <View style={{
-        paddingTop: topInset + 16,
-        paddingHorizontal: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
+      <View
+        style={{
+          paddingTop: topInset + 16,
+          paddingHorizontal: 20,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         {step > 1 ? (
           <TouchableOpacity
             onPress={onBack}
             style={{
-              width: 40, height: 40, borderRadius: 12,
+              width: 40,
+              height: 40,
+              borderRadius: 12,
               backgroundColor: theme.surface,
-              borderWidth: 0.5, borderColor: theme.border,
-              alignItems: 'center', justifyContent: 'center',
+              borderWidth: 0.5,
+              borderColor: theme.border,
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <FRIcon name="back" size={14} color={theme.text} strokeWidth={2} />
           </TouchableOpacity>
-        ) : <View style={{ width: 40 }} />}
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
 
-        <Text style={{
-          fontFamily: 'JetBrainsMono_600SemiBold',
-          fontSize: 11,
-          color: theme.textMute,
-          letterSpacing: 1.2,
-        }}>
-          STEP {String(step).padStart(2, '0')} / {String(total).padStart(2, '0')}
+        <Text
+          style={{
+            fontFamily: "JetBrainsMono_600SemiBold",
+            fontSize: 11,
+            color: theme.textMute,
+            letterSpacing: 1.2,
+          }}
+        >
+          STEP {String(step).padStart(2, "0")} /{" "}
+          {String(total).padStart(2, "0")}
         </Text>
 
         <FRMark size={18} color={theme.text} />
       </View>
 
       {/* Progress dashes */}
-      <View style={{
-        paddingHorizontal: 20,
-        paddingTop: 14,
-        flexDirection: 'row',
-        gap: 4,
-      }}>
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 14,
+          flexDirection: "row",
+          gap: 4,
+        }}
+      >
         {Array.from({ length: total }).map((_, i) => (
-          <View key={i} style={{
-            flex: 1,
-            height: 3,
-            borderRadius: 3,
-            backgroundColor: i < step ? theme.accent : theme.surface2,
-          }} />
+          <View
+            key={i}
+            style={{
+              flex: 1,
+              height: 3,
+              borderRadius: 3,
+              backgroundColor: i < step ? theme.accent : theme.surface2,
+            }}
+          />
         ))}
       </View>
 
       {/* Title */}
       <View style={{ paddingHorizontal: 20, paddingTop: 32 }}>
-        <Text style={{
-          fontFamily: 'InterTight_700Bold',
-          fontSize: 32,
-          color: theme.text,
-          letterSpacing: -1.2,
-          lineHeight: 34,
-        }}>
+        <Text
+          style={{
+            fontFamily: "InterTight_700Bold",
+            fontSize: 32,
+            color: theme.text,
+            letterSpacing: -1.2,
+            lineHeight: 34,
+          }}
+        >
           {title}
         </Text>
         {sub ? (
-          <Text style={{
-            marginTop: 10,
-            fontSize: 14,
-            color: theme.textDim,
-            lineHeight: 20,
-            maxWidth: 300,
-          }}>
+          <Text
+            style={{
+              marginTop: 10,
+              fontSize: 14,
+              color: theme.textDim,
+              lineHeight: 20,
+              maxWidth: 300,
+            }}
+          >
             {sub}
           </Text>
         ) : null}
@@ -142,10 +176,24 @@ interface StepCTAProps {
   error?: string;
 }
 
-function StepCTA({ theme, label, onPress, disabled = false, loading = false, hint, error }: StepCTAProps) {
+function StepCTA({
+  theme,
+  label,
+  onPress,
+  disabled = false,
+  loading = false,
+  hint,
+  error,
+}: StepCTAProps) {
   const blocked = disabled || loading;
   return (
-    <View style={{ paddingHorizontal: 20, paddingBottom: 28, marginTop: 'auto' as any }}>
+    <View
+      style={{
+        paddingHorizontal: 20,
+        paddingBottom: 28,
+        marginTop: "auto" as any,
+      }}
+    >
       <TouchableOpacity
         onPress={blocked ? undefined : onPress}
         activeOpacity={blocked ? 1 : 0.85}
@@ -153,43 +201,51 @@ function StepCTA({ theme, label, onPress, disabled = false, loading = false, hin
           height: 56,
           borderRadius: 16,
           backgroundColor: blocked ? theme.surface2 : theme.accent,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
           gap: 8,
           opacity: blocked ? 0.6 : 1,
         }}
       >
-        <Text style={{
-          fontFamily: 'InterTight_700Bold',
-          fontSize: 16,
-          color: blocked ? theme.textMute : theme.bg,
-          letterSpacing: -0.2,
-        }}>
-          {loading ? '···' : label}
+        <Text
+          style={{
+            fontFamily: "InterTight_700Bold",
+            fontSize: 16,
+            color: blocked ? theme.textMute : theme.bg,
+            letterSpacing: -0.2,
+          }}
+        >
+          {loading ? "···" : label}
         </Text>
-        {!blocked && <FRIcon name="arrow" size={18} color={theme.bg} strokeWidth={2.4} />}
+        {!blocked && (
+          <FRIcon name="arrow" size={18} color={theme.bg} strokeWidth={2.4} />
+        )}
       </TouchableOpacity>
       {error ? (
-        <Text style={{
-          marginTop: 10,
-          textAlign: 'center',
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 11,
-          color: theme.danger,
-          letterSpacing: 0.3,
-        }}>
+        <Text
+          style={{
+            marginTop: 10,
+            textAlign: "center",
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 11,
+            color: theme.danger,
+            letterSpacing: 0.3,
+          }}
+        >
           {error}
         </Text>
       ) : hint ? (
-        <Text style={{
-          marginTop: 12,
-          textAlign: 'center',
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 10,
-          color: theme.textMute,
-          letterSpacing: 0.5,
-        }}>
+        <Text
+          style={{
+            marginTop: 12,
+            textAlign: "center",
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 10,
+            color: theme.textMute,
+            letterSpacing: 0.5,
+          }}
+        >
           {hint}
         </Text>
       ) : null}
@@ -206,42 +262,62 @@ interface CountryPickerProps {
   topInset: number;
 }
 
-function CountryPicker({ theme, onPick, onClose, topInset }: CountryPickerProps) {
-  const [query, setQuery] = useState('');
-  const filtered = COUNTRIES.filter(c =>
-    c.name.toLowerCase().includes(query.toLowerCase()) || c.dial.includes(query)
+function CountryPicker({
+  theme,
+  onPick,
+  onClose,
+  topInset,
+}: CountryPickerProps) {
+  const [query, setQuery] = useState("");
+  const filtered = COUNTRIES.filter(
+    (c) =>
+      c.name.toLowerCase().includes(query.toLowerCase()) ||
+      c.dial.includes(query),
   );
 
   return (
-    <View style={{
-      position: 'absolute',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: theme.bg,
-      zIndex: 100,
-    }}>
+    <View
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: theme.bg,
+        zIndex: 100,
+      }}
+    >
       {/* Header */}
-      <View style={{
-        paddingTop: topInset + 16,
-        paddingHorizontal: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-        <Text style={{
-          fontFamily: 'InterTight_700Bold',
-          fontSize: 22,
-          color: theme.text,
-          letterSpacing: -0.5,
-        }}>
+      <View
+        style={{
+          paddingTop: topInset + 16,
+          paddingHorizontal: 20,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: "InterTight_700Bold",
+            fontSize: 22,
+            color: theme.text,
+            letterSpacing: -0.5,
+          }}
+        >
           Country
         </Text>
         <TouchableOpacity
           onPress={onClose}
           style={{
-            width: 40, height: 40, borderRadius: 12,
+            width: 40,
+            height: 40,
+            borderRadius: 12,
             backgroundColor: theme.surface,
-            borderWidth: 0.5, borderColor: theme.border,
-            alignItems: 'center', justifyContent: 'center',
+            borderWidth: 0.5,
+            borderColor: theme.border,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <FRIcon name="close" size={16} color={theme.text} />
@@ -250,15 +326,19 @@ function CountryPicker({ theme, onPick, onClose, topInset }: CountryPickerProps)
 
       {/* Search */}
       <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
-        <View style={{
-          height: 44, borderRadius: 12,
-          paddingHorizontal: 12,
-          backgroundColor: theme.surface,
-          borderWidth: 0.5, borderColor: theme.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-        }}>
+        <View
+          style={{
+            height: 44,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            backgroundColor: theme.surface,
+            borderWidth: 0.5,
+            borderColor: theme.border,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
           <FRIcon name="search" size={16} color={theme.textMute} />
           <TextInput
             value={query}
@@ -267,7 +347,7 @@ function CountryPicker({ theme, onPick, onClose, topInset }: CountryPickerProps)
             placeholderTextColor={theme.textMute}
             style={{
               flex: 1,
-              fontFamily: 'InterTight_400Regular',
+              fontFamily: "InterTight_400Regular",
               fontSize: 14,
               color: theme.text,
             }}
@@ -281,14 +361,17 @@ function CountryPicker({ theme, onPick, onClose, topInset }: CountryPickerProps)
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        {filtered.map(c => (
+        {filtered.map((c) => (
           <TouchableOpacity
             key={c.code}
-            onPress={() => { onPick(c); onClose(); }}
+            onPress={() => {
+              onPick(c);
+              onClose();
+            }}
             activeOpacity={0.7}
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
+              flexDirection: "row",
+              alignItems: "center",
               gap: 12,
               paddingVertical: 12,
               paddingHorizontal: 4,
@@ -297,19 +380,23 @@ function CountryPicker({ theme, onPick, onClose, topInset }: CountryPickerProps)
             }}
           >
             <Text style={{ fontSize: 22 }}>{c.emoji}</Text>
-            <Text style={{
-              flex: 1,
-              fontFamily: 'InterTight_400Regular',
-              fontSize: 15,
-              color: theme.text,
-            }}>
+            <Text
+              style={{
+                flex: 1,
+                fontFamily: "InterTight_400Regular",
+                fontSize: 15,
+                color: theme.text,
+              }}
+            >
               {c.name}
             </Text>
-            <Text style={{
-              fontFamily: 'JetBrainsMono_600SemiBold',
-              fontSize: 13,
-              color: theme.textMute,
-            }}>
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_600SemiBold",
+                fontSize: 13,
+                color: theme.textMute,
+              }}
+            >
               {c.dial}
             </Text>
           </TouchableOpacity>
@@ -333,39 +420,52 @@ interface PhoneStepProps {
   error?: string;
 }
 
-function PhoneStep({ theme, topInset, country, phone, setPhone, onNext, onPickerOpen, loading, error }: PhoneStepProps) {
-  const valid = phone.replace(/\D/g, '').length >= 8;
+function PhoneStep({
+  theme,
+  topInset,
+  country,
+  phone,
+  setPhone,
+  onNext,
+  onPickerOpen,
+  loading,
+  error,
+}: PhoneStepProps) {
+  const valid = phone.replace(/\D/g, "").length >= 8;
 
   return (
     <View style={{ flex: 1 }}>
       <StepHeader
         theme={theme}
-        step={1} total={4}
+        step={1}
+        total={4}
         topInset={topInset}
-        title={'Sign in.\nGet loud.'}
+        title={"Sign in.\nGet loud."}
         sub="We'll text you a 6-digit code. No password to remember."
       />
 
       <View style={{ paddingHorizontal: 20, paddingTop: 32 }}>
-        <Text style={{
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 10,
-          color: theme.textMute,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          marginBottom: 8,
-        }}>
+        <Text
+          style={{
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 10,
+            color: theme.textMute,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}
+        >
           Phone number
         </Text>
 
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: "row", gap: 10 }}>
           {/* Country picker button */}
           <TouchableOpacity
             onPress={onPickerOpen}
             activeOpacity={0.75}
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
+              flexDirection: "row",
+              alignItems: "center",
               gap: 8,
               height: 60,
               paddingHorizontal: 14,
@@ -376,36 +476,47 @@ function PhoneStep({ theme, topInset, country, phone, setPhone, onNext, onPicker
               minWidth: 110,
             }}
           >
-            <Text style={{ fontSize: 22, lineHeight: 28 }}>{country.emoji}</Text>
-            <Text style={{
-              fontFamily: 'JetBrainsMono_700Bold',
-              fontSize: 15,
-              color: theme.text,
-            }}>
+            <Text style={{ fontSize: 22, lineHeight: 28 }}>
+              {country.emoji}
+            </Text>
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_700Bold",
+                fontSize: 15,
+                color: theme.text,
+              }}
+            >
               {country.dial}
             </Text>
-            <FRIcon name="chevron-down" size={12} color={theme.textMute} strokeWidth={2} />
+            <FRIcon
+              name="chevron-down"
+              size={12}
+              color={theme.textMute}
+              strokeWidth={2}
+            />
           </TouchableOpacity>
 
           {/* Number input */}
-          <View style={{
-            flex: 1,
-            height: 60,
-            paddingHorizontal: 14,
-            borderRadius: 14,
-            backgroundColor: theme.surface,
-            borderWidth: 0.5,
-            borderColor: valid ? theme.accent : theme.border,
-            justifyContent: 'center',
-          }}>
+          <View
+            style={{
+              flex: 1,
+              height: 60,
+              paddingHorizontal: 14,
+              borderRadius: 14,
+              backgroundColor: theme.surface,
+              borderWidth: 0.5,
+              borderColor: valid ? theme.accent : theme.border,
+              justifyContent: "center",
+            }}
+          >
             <TextInput
               value={phone}
-              onChangeText={(t) => setPhone(t.replace(/[^\d\s\-()+]/g, ''))}
+              onChangeText={(t) => setPhone(t.replace(/[^\d\s\-()+]/g, ""))}
               placeholder="98 7654-3210"
               placeholderTextColor={theme.textMute}
               keyboardType="phone-pad"
               style={{
-                fontFamily: 'JetBrainsMono_600SemiBold',
+                fontFamily: "JetBrainsMono_600SemiBold",
                 fontSize: 17,
                 color: theme.text,
                 letterSpacing: 0.3,
@@ -415,22 +526,27 @@ function PhoneStep({ theme, topInset, country, phone, setPhone, onNext, onPicker
         </View>
 
         {/* Terms notice */}
-        <View style={{
-          marginTop: 18,
-          padding: 12,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderStyle: 'dashed',
-          borderColor: theme.border,
-        }}>
-          <Text style={{
-            fontFamily: 'JetBrainsMono_400Regular',
-            fontSize: 11,
-            color: theme.textDim,
-            letterSpacing: 0.3,
-            lineHeight: 16,
-          }}>
-            By continuing you agree to FanRoar's terms · We'll never post or call without permission.
+        <View
+          style={{
+            marginTop: 18,
+            padding: 12,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderStyle: "dashed",
+            borderColor: theme.border,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "JetBrainsMono_400Regular",
+              fontSize: 11,
+              color: theme.textDim,
+              letterSpacing: 0.3,
+              lineHeight: 16,
+            }}
+          >
+            By continuing you agree to FanRoar's terms · We'll never post or
+            call without permission.
           </Text>
         </View>
       </View>
@@ -443,7 +559,11 @@ function PhoneStep({ theme, topInset, country, phone, setPhone, onNext, onPicker
         disabled={!valid}
         loading={loading}
         error={error}
-        hint={valid ? `Code will be sent to ${country.dial} ${phone}` : 'Enter a valid number to continue'}
+        hint={
+          valid
+            ? `Code will be sent to ${country.dial} ${phone}`
+            : "Enter a valid number to continue"
+        }
       />
     </View>
   );
@@ -465,7 +585,19 @@ interface OTPStepProps {
   error?: string;
 }
 
-function OTPStep({ theme, topInset, country, phone, otp, setOtp, onNext, onBack, onResend, loading, error }: OTPStepProps) {
+function OTPStep({
+  theme,
+  topInset,
+  country,
+  phone,
+  otp,
+  setOtp,
+  onNext,
+  onBack,
+  onResend,
+  loading,
+  error,
+}: OTPStepProps) {
   const valid = otp.length === 6;
   const inputRef = useRef<TextInput>(null);
   const [resendIn, setResendIn] = useState(28);
@@ -473,12 +605,12 @@ function OTPStep({ theme, topInset, country, phone, otp, setOtp, onNext, onBack,
 
   useEffect(() => {
     if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn(r => r - 1), 1000);
+    const t = setTimeout(() => setResendIn((r) => r - 1), 1000);
     return () => clearTimeout(t);
   }, [resendIn]);
 
   useEffect(() => {
-    const t = setInterval(() => setTick(v => !v), 530);
+    const t = setInterval(() => setTick((v) => !v), 530);
     return () => clearInterval(t);
   }, []);
 
@@ -491,10 +623,11 @@ function OTPStep({ theme, topInset, country, phone, otp, setOtp, onNext, onBack,
     <View style={{ flex: 1 }}>
       <StepHeader
         theme={theme}
-        step={2} total={4}
+        step={2}
+        total={4}
         topInset={topInset}
         onBack={onBack}
-        title={'Enter the\n6-digit code.'}
+        title={"Enter the\n6-digit code."}
         sub={`Sent to ${country.dial} ${phone} · Expires in 10 min`}
       />
 
@@ -507,18 +640,24 @@ function OTPStep({ theme, topInset, country, phone, otp, setOtp, onNext, onBack,
         <TextInput
           ref={inputRef}
           value={otp}
-          onChangeText={(t) => setOtp(t.replace(/\D/g, '').slice(0, 6))}
+          onChangeText={(t) => setOtp(t.replace(/\D/g, "").slice(0, 6))}
           keyboardType="number-pad"
           maxLength={6}
-          style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+          style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
         />
 
         {/* 6 cells */}
-        <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'space-between' }}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 8,
+            justifyContent: "space-between",
+          }}
+        >
           {Array.from({ length: 6 }).map((_, i) => {
-            const digit = otp[i] ?? '';
+            const digit = otp[i] ?? "";
             const focused = otp.length === i;
-            const filled = digit !== '';
+            const filled = digit !== "";
             return (
               <View
                 key={i}
@@ -529,25 +668,37 @@ function OTPStep({ theme, topInset, country, phone, otp, setOtp, onNext, onBack,
                   borderRadius: 12,
                   backgroundColor: filled ? theme.surface : theme.surface2,
                   borderWidth: 1.5,
-                  borderColor: focused ? theme.accent : filled ? theme.borderStrong : theme.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  shadowColor: focused ? theme.accent : 'transparent',
+                  borderColor: focused
+                    ? theme.accent
+                    : filled
+                      ? theme.borderStrong
+                      : theme.border,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  shadowColor: focused ? theme.accent : "transparent",
                   shadowOffset: { width: 0, height: 0 },
                   shadowOpacity: focused ? 0.35 : 0,
                   shadowRadius: focused ? 8 : 0,
                 }}
               >
                 {filled ? (
-                  <Text style={{
-                    fontFamily: 'JetBrainsMono_700Bold',
-                    fontSize: 26,
-                    color: theme.text,
-                  }}>
+                  <Text
+                    style={{
+                      fontFamily: "JetBrainsMono_700Bold",
+                      fontSize: 26,
+                      color: theme.text,
+                    }}
+                  >
                     {digit}
                   </Text>
                 ) : focused && tick ? (
-                  <View style={{ width: 2, height: 22, backgroundColor: theme.accent }} />
+                  <View
+                    style={{
+                      width: 2,
+                      height: 22,
+                      backgroundColor: theme.accent,
+                    }}
+                  />
                 ) : null}
               </View>
             );
@@ -555,30 +706,43 @@ function OTPStep({ theme, topInset, country, phone, otp, setOtp, onNext, onBack,
         </View>
 
         {/* Resend row */}
-        <View style={{
-          marginTop: 22,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <Text style={{
-            fontFamily: 'JetBrainsMono_400Regular',
-            fontSize: 12,
-            color: theme.textMute,
-            letterSpacing: 0.3,
-          }}>
-            {resendIn > 0 ? `Resend in 0:${String(resendIn).padStart(2, '0')}` : ''}
+        <View
+          style={{
+            marginTop: 22,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "JetBrainsMono_400Regular",
+              fontSize: 12,
+              color: theme.textMute,
+              letterSpacing: 0.3,
+            }}
+          >
+            {resendIn > 0
+              ? `Resend in 0:${String(resendIn).padStart(2, "0")}`
+              : ""}
           </Text>
           <TouchableOpacity
-            onPress={() => { if (resendIn === 0) { setResendIn(28); onResend(); } }}
+            onPress={() => {
+              if (resendIn === 0) {
+                setResendIn(28);
+                onResend();
+              }
+            }}
             disabled={resendIn > 0}
           >
-            <Text style={{
-              fontFamily: 'JetBrainsMono_600SemiBold',
-              fontSize: 12,
-              color: resendIn === 0 ? theme.accent : theme.textMute,
-              letterSpacing: 0.3,
-            }}>
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_600SemiBold",
+                fontSize: 12,
+                color: resendIn === 0 ? theme.accent : theme.textMute,
+                letterSpacing: 0.3,
+              }}
+            >
               Resend code
             </Text>
           </TouchableOpacity>
@@ -600,7 +764,7 @@ function OTPStep({ theme, topInset, country, phone, otp, setOtp, onNext, onBack,
 
 // ─── Step 3: Display Name ─────────────────────────────────────────────────────
 
-const NAME_SUGGESTIONS = ['AKB', 'BRA-12', 'verde47', 'samba.gold'];
+const NAME_SUGGESTIONS = ["AKB", "BRA-12", "verde47", "samba.gold"];
 
 interface DisplayNameStepProps {
   theme: Theme;
@@ -611,17 +775,26 @@ interface DisplayNameStepProps {
   onBack: () => void;
 }
 
-function DisplayNameStep({ theme, topInset, displayName, setDisplayName, onNext, onBack }: DisplayNameStepProps) {
-  const valid = displayName.trim().length >= 2 && displayName.trim().length <= 16;
+function DisplayNameStep({
+  theme,
+  topInset,
+  displayName,
+  setDisplayName,
+  onNext,
+  onBack,
+}: DisplayNameStepProps) {
+  const valid =
+    displayName.trim().length >= 2 && displayName.trim().length <= 16;
 
   return (
     <View style={{ flex: 1 }}>
       <StepHeader
         theme={theme}
-        step={3} total={4}
+        step={3}
+        total={4}
         topInset={topInset}
         onBack={onBack}
-        title={'How should\nfans know you?'}
+        title={"How should\nfans know you?"}
         sub="Shows on leaderboards and shareable cards. You can change it later."
       />
 
@@ -631,82 +804,98 @@ function DisplayNameStep({ theme, topInset, displayName, setDisplayName, onNext,
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={{
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 10,
-          color: theme.textMute,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          marginBottom: 8,
-        }}>
+        <Text
+          style={{
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 10,
+            color: theme.textMute,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}
+        >
           Display name
         </Text>
 
         {/* Input */}
-        <View style={{
-          height: 60,
-          paddingHorizontal: 14,
-          borderRadius: 14,
-          backgroundColor: theme.surface,
-          borderWidth: 0.5,
-          borderColor: valid ? theme.accent : theme.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <Text style={{
-            fontFamily: 'JetBrainsMono_700Bold',
-            fontSize: 17,
-            color: theme.textMute,
-          }}>@</Text>
+        <View
+          style={{
+            height: 60,
+            paddingHorizontal: 14,
+            borderRadius: 14,
+            backgroundColor: theme.surface,
+            borderWidth: 0.5,
+            borderColor: valid ? theme.accent : theme.border,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "JetBrainsMono_700Bold",
+              fontSize: 17,
+              color: theme.textMute,
+            }}
+          >
+            @
+          </Text>
           <TextInput
             value={displayName}
-            onChangeText={(t) => setDisplayName(t.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 16))}
+            onChangeText={(t) =>
+              setDisplayName(t.replace(/[^a-zA-Z0-9._-]/g, "").slice(0, 16))
+            }
             placeholder="AKB"
             placeholderTextColor={theme.textMute}
             autoCapitalize="none"
             autoCorrect={false}
             style={{
               flex: 1,
-              fontFamily: 'JetBrainsMono_600SemiBold',
+              fontFamily: "JetBrainsMono_600SemiBold",
               fontSize: 17,
               color: theme.text,
             }}
           />
-          <Text style={{
-            fontFamily: 'JetBrainsMono_400Regular',
-            fontSize: 11,
-            color: theme.textMute,
-          }}>
+          <Text
+            style={{
+              fontFamily: "JetBrainsMono_400Regular",
+              fontSize: 11,
+              color: theme.textMute,
+            }}
+          >
             {displayName.length}/16
           </Text>
         </View>
 
-        <Text style={{
-          marginTop: 8,
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 10,
-          color: theme.textMute,
-          letterSpacing: 0.3,
-          lineHeight: 15,
-        }}>
+        <Text
+          style={{
+            marginTop: 8,
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 10,
+            color: theme.textMute,
+            letterSpacing: 0.3,
+            lineHeight: 15,
+          }}
+        >
           A–Z, 0–9, dot, dash, underscore · 2–16 characters
         </Text>
 
         {/* Suggestions */}
-        <Text style={{
-          marginTop: 22,
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 10,
-          color: theme.textMute,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          marginBottom: 8,
-        }}>
+        <Text
+          style={{
+            marginTop: 22,
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 10,
+            color: theme.textMute,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}
+        >
           Suggested
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {NAME_SUGGESTIONS.map(s => {
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {NAME_SUGGESTIONS.map((s) => {
             const active = displayName === s;
             return (
               <TouchableOpacity
@@ -722,11 +911,13 @@ function DisplayNameStep({ theme, topInset, displayName, setDisplayName, onNext,
                   borderColor: active ? theme.accent : theme.border,
                 }}
               >
-                <Text style={{
-                  fontFamily: 'JetBrainsMono_600SemiBold',
-                  fontSize: 13,
-                  color: active ? theme.bg : theme.text,
-                }}>
+                <Text
+                  style={{
+                    fontFamily: "JetBrainsMono_600SemiBold",
+                    fontSize: 13,
+                    color: active ? theme.bg : theme.text,
+                  }}
+                >
                   @{s}
                 </Text>
               </TouchableOpacity>
@@ -735,88 +926,109 @@ function DisplayNameStep({ theme, topInset, displayName, setDisplayName, onNext,
         </View>
 
         {/* Leaderboard preview */}
-        <Text style={{
-          marginTop: 28,
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 10,
-          color: theme.textMute,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          marginBottom: 8,
-        }}>
+        <Text
+          style={{
+            marginTop: 28,
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 10,
+            color: theme.textMute,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}
+        >
           Preview · leaderboard row
         </Text>
-        <View style={{
-          borderRadius: 14,
-          overflow: 'hidden',
-          borderWidth: 0.5,
-          borderColor: theme.accent,
-        }}>
+        <View
+          style={{
+            borderRadius: 14,
+            overflow: "hidden",
+            borderWidth: 0.5,
+            borderColor: theme.accent,
+          }}
+        >
           <LinearGradient
-            colors={[theme.accent + '22', theme.accent + '06']}
+            colors={[theme.accent + "22", theme.accent + "06"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
+              flexDirection: "row",
+              alignItems: "center",
               padding: 12,
               gap: 10,
             }}
           >
-            <Text style={{
-              width: 24,
-              fontFamily: 'JetBrainsMono_700Bold',
-              fontSize: 12,
-              color: theme.textDim,
-              textAlign: 'center',
-            }}>
+            <Text
+              style={{
+                width: 24,
+                fontFamily: "JetBrainsMono_700Bold",
+                fontSize: 12,
+                color: theme.textDim,
+                textAlign: "center",
+              }}
+            >
               312
             </Text>
-            <View style={{
-              width: 28, height: 28,
-              borderRadius: 8,
-              backgroundColor: theme.accent,
-            }} />
+            <View
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                backgroundColor: theme.accent,
+              }}
+            />
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{
-                  fontFamily: 'InterTight_600SemiBold',
-                  fontSize: 15,
-                  color: theme.text,
-                }}>
-                  @{displayName || 'AKB'}
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "InterTight_600SemiBold",
+                    fontSize: 15,
+                    color: theme.text,
+                  }}
+                >
+                  @{displayName || "AKB"}
                 </Text>
-                <View style={{
-                  paddingHorizontal: 5,
-                  paddingVertical: 2,
-                  borderRadius: 4,
-                  backgroundColor: theme.accent + '22',
-                }}>
-                  <Text style={{
-                    fontFamily: 'JetBrainsMono_700Bold',
-                    fontSize: 9,
-                    color: theme.accent,
-                    letterSpacing: 0.5,
-                  }}>
+                <View
+                  style={{
+                    paddingHorizontal: 5,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    backgroundColor: theme.accent + "22",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "JetBrainsMono_700Bold",
+                      fontSize: 9,
+                      color: theme.accent,
+                      letterSpacing: 0.5,
+                    }}
+                  >
                     YOU
                   </Text>
                 </View>
               </View>
-              <Text style={{
-                fontFamily: 'JetBrainsMono_400Regular',
-                fontSize: 10,
-                color: theme.textMute,
-                letterSpacing: 0.5,
-                marginTop: 1,
-              }}>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono_400Regular",
+                  fontSize: 10,
+                  color: theme.textMute,
+                  letterSpacing: 0.5,
+                  marginTop: 1,
+                }}
+              >
                 BRA · top 0.4%
               </Text>
             </View>
-            <Text style={{
-              fontFamily: 'JetBrainsMono_700Bold',
-              fontSize: 14,
-              color: theme.text,
-            }}>
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_700Bold",
+                fontSize: 14,
+                color: theme.text,
+              }}
+            >
               48K
             </Text>
           </LinearGradient>
@@ -848,14 +1060,23 @@ interface RoleCardProps {
   power: string;
 }
 
-function RoleCard({ theme, active, onSelect, icon, name, mult, input, power }: RoleCardProps) {
+function RoleCard({
+  theme,
+  active,
+  onSelect,
+  icon,
+  name,
+  mult,
+  input,
+  power,
+}: RoleCardProps) {
   return (
     <TouchableOpacity
       onPress={onSelect}
       activeOpacity={0.8}
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         gap: 14,
         padding: 14,
         paddingHorizontal: 16,
@@ -865,47 +1086,66 @@ function RoleCard({ theme, active, onSelect, icon, name, mult, input, power }: R
         borderColor: active ? theme.accent : theme.border,
       }}
     >
-      <View style={{
-        width: 44, height: 44, borderRadius: 12,
-        backgroundColor: active ? theme.bg : theme.surface2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <FRIcon name={icon} size={22} color={active ? theme.accent : theme.text} strokeWidth={1.8} />
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          backgroundColor: active ? theme.bg : theme.surface2,
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <FRIcon
+          name={icon}
+          size={22}
+          color={active ? theme.accent : theme.text}
+          strokeWidth={1.8}
+        />
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text style={{
-          fontFamily: 'InterTight_700Bold',
-          fontSize: 17,
-          color: active ? theme.bg : theme.text,
-          letterSpacing: -0.3,
-        }}>
+        <Text
+          style={{
+            fontFamily: "InterTight_700Bold",
+            fontSize: 17,
+            color: active ? theme.bg : theme.text,
+            letterSpacing: -0.3,
+          }}
+        >
           {name}
         </Text>
-        <Text style={{
-          fontFamily: 'JetBrainsMono_400Regular',
-          fontSize: 10,
-          color: active ? theme.bg : theme.textMute,
-          opacity: active ? 0.7 : 1,
-          letterSpacing: 0.3,
-          marginTop: 2,
-        }}>
+        <Text
+          style={{
+            fontFamily: "JetBrainsMono_400Regular",
+            fontSize: 10,
+            color: active ? theme.bg : theme.textMute,
+            opacity: active ? 0.7 : 1,
+            letterSpacing: 0.3,
+            marginTop: 2,
+          }}
+        >
           {mult} {input.toUpperCase()} · {power.toUpperCase()}
         </Text>
       </View>
 
       {/* Radio */}
-      <View style={{
-        width: 22, height: 22, borderRadius: 22,
-        borderWidth: 1.5,
-        borderColor: active ? theme.bg : theme.borderStrong,
-        backgroundColor: active ? theme.bg : 'transparent',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        {active && <FRIcon name="check" size={12} color={theme.accent} strokeWidth={3} />}
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 22,
+          borderWidth: 1.5,
+          borderColor: active ? theme.bg : theme.borderStrong,
+          backgroundColor: active ? theme.bg : "transparent",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {active && (
+          <FRIcon name="check" size={12} color={theme.accent} strokeWidth={3} />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -922,23 +1162,33 @@ interface RoleStepProps {
   error?: string;
 }
 
-function RoleStep({ theme, topInset, role, setRole, onFinish, onBack, loading, error }: RoleStepProps) {
+function RoleStep({
+  theme,
+  topInset,
+  role,
+  setRole,
+  onFinish,
+  onBack,
+  loading,
+  error,
+}: RoleStepProps) {
   return (
     <View style={{ flex: 1 }}>
       <StepHeader
         theme={theme}
-        step={4} total={4}
+        step={4}
+        total={4}
         topInset={topInset}
         onBack={onBack}
-        title={'Pick your\nfan role.'}
+        title={"Pick your\nfan role."}
         sub="Each role amplifies a different input. You can switch any time."
       />
 
       <View style={{ paddingHorizontal: 20, paddingTop: 24, gap: 10 }}>
         <RoleCard
           theme={theme}
-          active={role === 'drummer'}
-          onSelect={() => setRole('drummer')}
+          active={role === "drummer"}
+          onSelect={() => setRole("drummer")}
           icon="drum"
           name="Drummer"
           mult="1.2×"
@@ -947,8 +1197,8 @@ function RoleStep({ theme, topInset, role, setRole, onFinish, onBack, loading, e
         />
         <RoleCard
           theme={theme}
-          active={role === 'chanter'}
-          onSelect={() => setRole('chanter')}
+          active={role === "chanter"}
+          onSelect={() => setRole("chanter")}
           icon="megaphone"
           name="Chanter"
           mult="1.3×"
@@ -957,8 +1207,8 @@ function RoleStep({ theme, topInset, role, setRole, onFinish, onBack, loading, e
         />
         <RoleCard
           theme={theme}
-          active={role === 'ultra'}
-          onSelect={() => setRole('ultra')}
+          active={role === "ultra"}
+          onSelect={() => setRole("ultra")}
           icon="lightning"
           name="Ultra Fan"
           mult="1.5×"
@@ -983,18 +1233,18 @@ function RoleStep({ theme, topInset, role, setRole, onFinish, onBack, loading, e
 // ─── Main: OnboardingScreen ───────────────────────────────────────────────────
 
 const FAN_ROLE_API: Record<FanRole, string> = {
-  ultra:    'ULTRA_FAN',
-  drummer:  'DRUMMER',
-  chanter:  'CHANTER',
+  ultra: "ULTRA_FAN",
+  drummer: "DRUMMER",
+  chanter: "CHANTER",
 };
 
 function mapApiFanRole(apiRole: string): FanRole {
   const map: Record<string, FanRole> = {
-    ULTRA_FAN: 'ultra',
-    DRUMMER:   'drummer',
-    CHANTER:   'chanter',
+    ULTRA_FAN: "ultra",
+    DRUMMER: "drummer",
+    CHANTER: "chanter",
   };
-  return map[apiRole] ?? 'ultra';
+  return map[apiRole] ?? "ultra";
 }
 
 export default function OnboardingScreen(_props: Props) {
@@ -1004,25 +1254,25 @@ export default function OnboardingScreen(_props: Props) {
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
-  const [phone, setPhoneLocal] = useState('');
-  const [otp, setOtp] = useState('');
-  const [displayNameLocal, setDisplayNameLocal] = useState('');
-  const [role, setRole] = useState<FanRole>('ultra');
+  const [phone, setPhoneLocal] = useState("");
+  const [otp, setOtp] = useState("");
+  const [displayNameLocal, setDisplayNameLocal] = useState("");
+  const [role, setRole] = useState<FanRole>("ultra");
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const fullPhone = `${country.dial}${phone}`;
 
   const handleSendCode = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       await api.auth.requestOtp(fullPhone);
-      setOtp('');
+      setOtp("");
       setStep(2);
     } catch (e: any) {
-      setError(e.response?.data?.message ?? 'Failed to send code. Try again.');
+      setError(e.response?.data?.message ?? "Failed to send code. Try again.");
     } finally {
       setLoading(false);
     }
@@ -1030,25 +1280,29 @@ export default function OnboardingScreen(_props: Props) {
 
   const handleVerifyOtp = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
-      const { data: authData } = await api.auth.verifyOtp(fullPhone, otp, country.code);
+      const { data: authData } = await api.auth.verifyOtp(
+        fullPhone,
+        otp,
+        country.code,
+      );
       setToken(authData.accessToken);
       const { data: me } = await api.auth.me();
       setUser({
-        id:            me.userId,
-        displayName:   me.displayName ?? '',
-        phone:         fullPhone,
-        fanRole:       mapApiFanRole(me.fanRole),
-        teamCode:      me.teamKey ?? teamCode,
-        xp:            me.xp ?? 0,
+        id: me.userId,
+        displayName: me.displayName ?? "",
+        phone: fullPhone,
+        fanRole: mapApiFanRole(me.fanRole),
+        teamCode: me.teamKey ?? teamCode,
+        xp: me.xp ?? 0,
         xpToNextLevel: me.xpToNextLevel ?? (me.level ?? 1) * 1000,
-        level:         me.level ?? 1,
-        badges:        me.badges ?? [],
-        countryCode:   me.countryCode ?? country.code,
-        cityCode:      me.cityCode ?? '',
+        level: me.level ?? 1,
+        badges: me.badges ?? [],
+        countryCode: me.countryCode ?? country.code,
+        cityCode: me.cityCode ?? "",
       });
-      if (me.fanRole && me.fanRole !== 'CASUAL') {
+      if (me.fanRole && me.fanRole !== "CASUAL") {
         setDisplayNameLocal(me.displayName);
         setOnboarded();
         // navigator auto-switches to Main when isAuthenticated becomes true
@@ -1056,7 +1310,7 @@ export default function OnboardingScreen(_props: Props) {
         setStep(3);
       }
     } catch (e: any) {
-      setError(e.response?.data?.message ?? 'Invalid code. Please try again.');
+      setError(e.response?.data?.message ?? "Invalid code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -1064,7 +1318,7 @@ export default function OnboardingScreen(_props: Props) {
 
   const handleFinish = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       await api.auth.updateProfile({
         displayName: displayNameLocal,
@@ -1072,35 +1326,35 @@ export default function OnboardingScreen(_props: Props) {
       });
       const { data: me } = await api.auth.me();
       setUser({
-        id:            me.userId,
-        displayName:   me.displayName ?? displayNameLocal,
-        phone:         fullPhone,
-        fanRole:       mapApiFanRole(me.fanRole),
-        teamCode:      me.teamKey ?? teamCode,
-        xp:            me.xp ?? 0,
+        id: me.userId,
+        displayName: me.displayName ?? displayNameLocal,
+        phone: fullPhone,
+        fanRole: mapApiFanRole(me.fanRole),
+        teamCode: me.teamKey ?? teamCode,
+        xp: me.xp ?? 0,
         xpToNextLevel: me.xpToNextLevel ?? (me.level ?? 1) * 1000,
-        level:         me.level ?? 1,
-        badges:        me.badges ?? [],
-        countryCode:   me.countryCode ?? country.code,
-        cityCode:      me.cityCode ?? '',
+        level: me.level ?? 1,
+        badges: me.badges ?? [],
+        countryCode: me.countryCode ?? country.code,
+        cityCode: me.cityCode ?? "",
       });
       setOnboarded();
       // navigator auto-switches to Main when isAuthenticated becomes true
     } catch (e: any) {
-      setError(e.response?.data?.message ?? 'Something went wrong. Try again.');
+      setError(e.response?.data?.message ?? "Something went wrong. Try again.");
       setLoading(false);
     }
   };
 
   const goToStep = (s: 1 | 2 | 3 | 4) => {
-    setError('');
+    setError("");
     setStep(s);
   };
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {step === 1 && (
         <PhoneStep

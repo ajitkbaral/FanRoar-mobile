@@ -76,10 +76,7 @@ export default function MatchScreen() {
   // isDemo: no real matchId in route params → show simulation
   const isDemo = !route.params?.matchId;
 
-  // Guard: '__demo__' must never reach useMatchSocket
-  const matchId = route.params?.matchId
-    ?? (match?.id === "__demo__" ? null : match?.id)
-    ?? null;
+  const matchId = route.params?.matchId ?? null;
 
   useDemoMode(isDemo);
 
