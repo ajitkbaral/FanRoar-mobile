@@ -29,6 +29,7 @@ export interface Match {
 interface MatchState {
   match: Match | null;
   lastMatchId: string | null;
+  joinedMatchId: string | null;
   scoreA: number;
   scoreB: number;
   momentum: number; // 0–100, teamA = left
@@ -39,6 +40,7 @@ interface MatchState {
   completedMiniGames: string[];
 
   setMatch: (match: Match) => void;
+  setJoinedMatchId: (id: string | null) => void;
   setMatchStatus: (status: Match['status']) => void;
   setScores: (scoreA: number, scoreB: number) => void;
   setMomentum: (momentum: number | ((prev: number) => number)) => void;
@@ -53,6 +55,7 @@ interface MatchState {
 export const useMatchStore = create<MatchState>((set) => ({
   match: null,
   lastMatchId: null,
+  joinedMatchId: null,
   scoreA: 0,
   scoreB: 0,
   momentum: 50,
@@ -76,6 +79,7 @@ export const useMatchStore = create<MatchState>((set) => ({
       completedMiniGames: sameMatch ? s.completedMiniGames : [],
     };
   }),
+  setJoinedMatchId: (id) => set({ joinedMatchId: id }),
   setMatchStatus: (status) => set((s) => ({
     match: s.match ? {
       ...s.match,
@@ -97,6 +101,6 @@ export const useMatchStore = create<MatchState>((set) => ({
     completedMiniGames: s.completedMiniGames.includes(key) ? s.completedMiniGames : [...s.completedMiniGames, key],
   })),
   resetMatch: () => set((s) => ({
-    match: null, lastMatchId: s.match?.id ?? s.lastMatchId, scoreA: 0, scoreB: 0, momentum: 50, eventMode: 'normal', matchEvents: [], fanCount: 0, supportingTeamId: null, completedMiniGames: [],
+    match: null, lastMatchId: s.match?.id ?? s.lastMatchId, joinedMatchId: null, scoreA: 0, scoreB: 0, momentum: 50, eventMode: 'normal', matchEvents: [], fanCount: 0, supportingTeamId: null, completedMiniGames: [],
   })),
 }));

@@ -64,7 +64,9 @@ export default function MatchScreen() {
     scoreB,
     momentum,
     eventMode,
+    joinedMatchId,
     setMatch,
+    setJoinedMatchId,
     setScores,
     setMomentum,
     setEventMode,
@@ -73,10 +75,8 @@ export default function MatchScreen() {
     resetMatch,
   } = useMatchStore();
 
-  // isDemo: no real matchId in route params → show simulation
-  const isDemo = !route.params?.matchId;
-
-  const matchId = route.params?.matchId ?? null;
+  const matchId = route.params?.matchId ?? joinedMatchId ?? null;
+  const isDemo = !matchId;
 
   useDemoMode(isDemo);
 
@@ -134,6 +134,7 @@ export default function MatchScreen() {
 
   useEffect(() => {
     if (!matchId) return;
+    if (match?.id === matchId) return; // already loaded, skip refetch
     setMatchLoading(true);
     api.matches
       .byId(matchId)
@@ -150,6 +151,7 @@ export default function MatchScreen() {
           stage: m.stage,
           tournament: m.tournament,
         });
+        setJoinedMatchId(m.matchId);
         setScores(m.scores.teamA, m.scores.teamB);
         if (m.momentumRatio != null)
           setMomentum(Math.round(m.momentumRatio * 100));

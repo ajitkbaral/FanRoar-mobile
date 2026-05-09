@@ -47,10 +47,7 @@ function MainTabs() {
           theme={theme}
           activeKey={props.state.routes[props.state.index].name}
           onPress={(key) => {
-            const route = props.state.routes.find(r => r.name === key);
-            if (route) {
-              props.navigation.navigate(key as any);
-            }
+            (props.navigation as any).jumpTo(key);
           }}
         />
       )}
