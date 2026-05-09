@@ -1147,6 +1147,50 @@ export default function LeaderboardScreen() {
             currentRows.map((r, i) => renderRow(r, r.code + i))
           )}
 
+          {/* Global / Country empty state — outside ternary to guarantee render */}
+          {!loading &&
+            !error &&
+            (activeTab === "global" || activeTab === "country") &&
+            currentRows.length === 0 && (
+              <View
+                style={{
+                  alignItems: "center",
+                  paddingVertical: 40,
+                  paddingHorizontal: 24,
+                  gap: 12,
+                }}
+              >
+                <Text style={{ fontSize: 36 }}>
+                  {activeTab === "global" ? "🌍" : "🏳️"}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "InterTight_700Bold",
+                    fontSize: 22,
+                    color: theme.text,
+                    textAlign: "center",
+                    letterSpacing: -0.5,
+                  }}
+                >
+                  No rankings yet
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "JetBrainsMono_400Regular",
+                    fontSize: 12,
+                    color: theme.textMute,
+                    textAlign: "center",
+                    lineHeight: 18,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  {activeTab === "global"
+                    ? "Rankings will appear once fans start cheering"
+                    : "No country rankings yet — be the first to cheer"}
+                </Text>
+              </View>
+            )}
+
           {/* Your Position — shown only when user's rank is outside the visible list */}
           {!loading && currentYou && !youInList && (
             <>
