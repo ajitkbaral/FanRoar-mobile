@@ -228,7 +228,7 @@ export default function MatchScreen() {
 
   const teamACode = match?.teamA.code ?? theme.teamCode;
   const teamAName = match?.teamA.name ?? theme.teamName;
-  const teamAColor = TEAM_PALETTES[teamACode]?.primary ?? theme.accent;
+  const teamAColor = match?.teamAColor ?? TEAM_PALETTES[teamACode]?.primary ?? theme.accent;
   const teamA = {
     code: teamACode,
     color: teamAColor,
@@ -238,7 +238,7 @@ export default function MatchScreen() {
 
   const teamBCode = match?.teamB.code ?? "OPP";
   const teamBName = match?.teamB.name ?? "Opponent";
-  const teamBColor = TEAM_PALETTES[teamBCode]?.primary ?? theme.surface2;
+  const teamBColor = match?.teamBColor ?? TEAM_PALETTES[teamBCode]?.primary ?? theme.surface2;
   const teamB = {
     code: teamBCode,
     color: teamBColor,

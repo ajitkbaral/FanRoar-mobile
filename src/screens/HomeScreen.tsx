@@ -448,7 +448,7 @@ export default function HomeScreen() {
                           left: 0,
                           width: `${matchMomentum}%`,
                           backgroundColor:
-                            TEAM_PALETTES[m.teamA.code]?.primary ?? theme.accent,
+                            m.teamAColor ?? TEAM_PALETTES[m.teamA.code]?.primary ?? theme.accent,
                         }}
                       />
                       <View
@@ -459,7 +459,7 @@ export default function HomeScreen() {
                           right: 0,
                           width: `${100 - matchMomentum}%`,
                           backgroundColor:
-                            TEAM_PALETTES[m.teamB.code]?.primary ?? theme.surface2,
+                            m.teamBColor ?? TEAM_PALETTES[m.teamB.code]?.primary ?? theme.surface2,
                         }}
                       />
                     </View>
