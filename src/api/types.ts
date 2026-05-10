@@ -111,6 +111,12 @@ export interface XpUpdatePayload {
   xpToNextLevel: number;
 }
 
+export interface BadgeAwardedPayload {
+  badge: ApiBadge;
+  matchId: string;
+  userId: string;
+}
+
 export interface MiniGameSubmitRequest {
   matchId: string;
   gameType: 'penalty' | 'reaction' | 'hottake' | 'hype';

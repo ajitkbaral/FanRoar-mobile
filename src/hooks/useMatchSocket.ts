@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { getSocket } from "../api/socket";
-import { mapMatchStatus, XpUpdatePayload } from "../api/types";
+import { mapMatchStatus, XpUpdatePayload, BadgeAwardedPayload, ApiBadge } from "../api/types";
 import { useMatchStore } from "../store/matchStore";
 import { useUserStore } from "../store/userStore";
 
@@ -10,6 +10,7 @@ const LOG = (...args: unknown[]) => console.log("[Socket]", ...args);
 export function useMatchSocket(
   matchId: string | null,
   teamId: string | null = null,
+  options: { onBadgeAwarded?: (badge: ApiBadge) => void } = {},
 ) {
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
@@ -43,6 +44,9 @@ export function useMatchSocket(
   // Always-current ref so socket listeners never hold a stale joinRoom closure
   const joinRoomRef = useRef(joinRoom);
   joinRoomRef.current = joinRoom;
+
+  const onBadgeAwardedRef = useRef(options.onBadgeAwarded);
+  onBadgeAwardedRef.current = options.onBadgeAwarded;
 
   const leaveRoom = useCallback(() => {
     if (!matchId) return;
@@ -106,6 +110,14 @@ export function useMatchSocket(
       useUserStore.getState().applyXpUpdate(data);
     });
 
+    socket.on("badge_awarded", (data: BadgeAwardedPayload) => {
+      LOG("badge_awarded", data);
+      if (data.userId === resolvedUserId) {
+        useUserStore.getState().addBadge(data.badge);
+        onBadgeAwardedRef.current?.(data.badge);
+      }
+    });
+
     socket.on("disconnect", (reason) => {
       LOG("disconnected — reason:", reason);
       const delay = Math.min(
@@ -141,6 +153,7 @@ export function useMatchSocket(
       socket.off("match_status");
       socket.off("boost_activated");
       socket.off("xp_update");
+      socket.off("badge_awarded");
       socket.off("disconnect");
       socket.off("connect_error");
       sub.remove();

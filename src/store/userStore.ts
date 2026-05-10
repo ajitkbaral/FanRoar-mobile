@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FanRole } from '../utils/constants';
-import { XpUpdatePayload } from '../api/types';
+import { XpUpdatePayload, ApiBadge } from '../api/types';
 
 interface Badge {
   id: string;
@@ -54,6 +54,7 @@ interface UserState {
   logout: () => void;
   applyXpUpdate: (update: XpUpdatePayload) => void;
   clearLevelUp: () => void;
+  addBadge: (badge: ApiBadge) => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -108,6 +109,11 @@ export const useUserStore = create<UserState>()(
         pendingLevelUpLevel: update.leveledUp ? update.level : s.pendingLevelUpLevel,
       })),
       clearLevelUp: () => set({ pendingLevelUp: false }),
+      addBadge: (badge) => set((s) => {
+        if (!s.user) return s;
+        if (s.user.badges.some((b) => b.id === badge.id)) return s;
+        return { user: { ...s.user, badges: [...s.user.badges, badge] } };
+      }),
     }),
     {
       name: 'fanroar-user',

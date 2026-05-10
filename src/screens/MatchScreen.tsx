@@ -26,10 +26,12 @@ import EnergyMeter from "../components/EnergyMeter";
 import PowerUpPanel from "../components/PowerUpPanel";
 import FRLiveDot from "../components/shared/FRLiveDot";
 import FRIcon from "../components/shared/FRIcon";
+import BadgeToast from "../components/shared/BadgeToast";
 import { PowerUpType, FanRole } from "../utils/constants";
 import { TEAM_PALETTES } from "../theme/colors";
 import { api } from "../api/client";
 import { MainTabParamList } from "../navigation";
+import { ApiBadge } from "../api/types";
 
 interface Burst {
   id: string;
@@ -98,6 +100,7 @@ export default function MatchScreen() {
     }
   }, [match?.status, match?.id, matchId]);
 
+  const [awardedBadge, setAwardedBadge] = useState<ApiBadge | null>(null);
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [floaters, setFloaters] = useState<Floater[]>([]);
   const [holdProgress] = useState(0);
@@ -176,6 +179,7 @@ export default function MatchScreen() {
   const { emitEnergy: socketEmit, activatePowerUp, leaveRoom } = useMatchSocket(
     matchId,
     supportingTeamId,
+    { onBadgeAwarded: (badge) => setAwardedBadge(badge) },
   );
 
   const handleLeave = useCallback(() => {
@@ -689,6 +693,8 @@ export default function MatchScreen() {
           </Text>
         </Animated.View>
       )}
+
+      <BadgeToast badge={awardedBadge} theme={theme} onDone={() => setAwardedBadge(null)} />
 
       {/* Team picker overlay — blocks interaction until a team is chosen */}
       {showTeamPicker && (

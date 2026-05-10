@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
@@ -8,12 +9,18 @@ import FRChip from '../components/shared/FRChip';
 import FRIcon from '../components/shared/FRIcon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../api/client';
-import { ApiHistoryEntry } from '../api/types';
+import { ApiHistoryEntry, ApiBadge } from '../api/types';
 
 const ROLE_LABELS: Record<string, string> = {
-  ultra:   'Ultra Fan',
-  drummer: 'Drummer',
-  chanter: 'Chanter',
+  ultra:     'Ultra Fan',
+  ultra_fan: 'Ultra Fan',
+  ULTRA_FAN: 'Ultra Fan',
+  drummer:   'Drummer',
+  DRUMMER:   'Drummer',
+  chanter:   'Chanter',
+  CHANTER:   'Chanter',
+  casual:    'Casual',
+  CASUAL:    'Casual',
 };
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -37,9 +44,9 @@ function tierName(level: number): string {
 }
 
 const LOCKED_PLACEHOLDERS = [
-  { name: 'WC Warrior', description: '10+ matches',        color: '#E8C000', icon: 'shield' },
-  { name: 'Earthquake', description: '500 shakes / match', color: '#6060E0', icon: 'lightning' },
-  { name: 'Voice of',   description: 'Top voice fan',      color: '#00A8C0', icon: 'megaphone' },
+  { name: 'WC Warrior',         description: '10+ matches attended', color: '#E8C000', icon: 'shield' },
+  { name: 'Earthquake',         description: '500 shakes in a match', color: '#6060E0', icon: 'lightning' },
+  { name: 'Voice of the Crowd', description: 'Top voice fan',         color: '#00A8C0', icon: 'megaphone' },
 ];
 
 export default function ProfileScreen() {
@@ -65,6 +72,10 @@ export default function ProfileScreen() {
     api.profile.history(userId).then((res) => {
       const history = res.data as ApiHistoryEntry[];
       setMatchCount(history.length);
+    }).catch(() => {});
+    api.profile.badges(userId).then((res) => {
+      const currentUser = useUserStore.getState().user;
+      if (currentUser) useUserStore.getState().setUser({ ...currentUser, badges: res.data as ApiBadge[] });
     }).catch(() => {});
   }, [userId]);
 
@@ -222,10 +233,10 @@ export default function ProfileScreen() {
               key={`locked-${i}`}
               style={{
                 width: '30%', aspectRatio: 1, borderRadius: 16, padding: 10,
-                backgroundColor: 'transparent',
-                borderWidth: 0.5, borderStyle: 'dashed', borderColor: theme.borderStrong,
+                backgroundColor: theme.surface,
+                borderWidth: 1, borderStyle: 'dashed', borderColor: theme.borderStrong,
                 justifyContent: 'space-between',
-                opacity: 0.4,
+                opacity: 0.55,
               }}
             >
               <View style={{
