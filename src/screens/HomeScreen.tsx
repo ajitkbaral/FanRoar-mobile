@@ -15,6 +15,7 @@ import { useUserStore } from "../store/userStore";
 import FRCard from "../components/shared/FRCard";
 import FRIcon from "../components/shared/FRIcon";
 import FRLiveDot from "../components/shared/FRLiveDot";
+import FRLogo from "../components/shared/FRLogo";
 import { TEAM_PALETTES } from "../theme/colors";
 import * as Haptics from "expo-haptics";
 import { api } from "../api/client";
@@ -160,23 +161,12 @@ export default function HomeScreen() {
             paddingBottom: 0,
           }}
         >
-          <Text
-            style={{
-              fontFamily: "JetBrainsMono_400Regular",
-              fontSize: 11,
-              color: theme.textMute,
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
-            }}
-          >
-            {new Date()
-              .toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })
-              .toUpperCase()}
-          </Text>
+          <FRLogo
+            textColor={theme.text}
+            accentColor={theme.accent}
+            variant="lockup"
+            size={26}
+          />
           {liveMatches.length > 0 && (
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 6 }}

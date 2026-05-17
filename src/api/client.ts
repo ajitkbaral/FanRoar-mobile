@@ -44,9 +44,13 @@ export const api = {
     requestOtp: (phone: string) => client.post('/auth/request-otp', { phone }),
     verifyOtp: (phone: string, otp: string, countryCode?: string) =>
       client.post('/auth/verify-otp', { phone, otp, countryCode }),
+    firebaseVerify: (idToken: string, countryCode?: string) =>
+      client.post<{ accessToken: string }>('/auth/firebase-verify', { idToken, countryCode }),
     me: () => client.get('/auth/me'),
     updateProfile: (data: { displayName?: string; fanRole?: string }) =>
       client.patch('/auth/profile', data),
+    checkDisplayName: (displayName: string) =>
+      client.get<{ available: boolean }>('/auth/check-displayname', { params: { displayName } }),
   },
   matches: {
     live: async () => {

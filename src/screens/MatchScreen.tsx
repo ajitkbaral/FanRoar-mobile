@@ -206,7 +206,7 @@ export default function MatchScreen() {
   });
 
   const handleInput = useCallback(
-    (kind: "tap" | "shake" | "voice" | "charge", raw = 1) => {
+    (kind: "tap" | "shake" | "charge", raw = 1) => {
       if (!supportingTeamId || !interactionAllowed) return;
       const gain = emitEnergy(kind, raw) ?? 1;
       // teamA owns the left (high momentum); teamB owns the right (low momentum)
@@ -240,7 +240,7 @@ export default function MatchScreen() {
   );
 
   const totalMult = getMultiplierDisplay(
-    fanRole === "drummer" ? "tap" : fanRole === "chanter" ? "voice" : "shake",
+    fanRole === "drummer" ? "tap" : "shake",
   );
 
   const teamACode = match?.teamA.code ?? theme.teamCode;

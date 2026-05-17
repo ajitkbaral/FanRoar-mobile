@@ -11,12 +11,15 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
+import { getAuth, signInWithPhoneNumber, PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import { RootStackParamList } from "../navigation";
 import { buildTheme, Theme } from "../theme";
 import { useUserStore } from "../store/userStore";
 import { FanRole } from "../utils/constants";
 import { api } from "../api/client";
-import FRMark from "../components/shared/FRMark";
+import { firebaseApp } from "../config/firebase";
+import FRLogo from "../components/shared/FRLogo";
 import FRIcon from "../components/shared/FRIcon";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Onboarding">;
@@ -42,6 +45,7 @@ const COUNTRIES: Country[] = [
   { code: "ES", dial: "+34", name: "Spain", emoji: "🇪🇸" },
   { code: "MX", dial: "+52", name: "Mexico", emoji: "🇲🇽" },
   { code: "JP", dial: "+81", name: "Japan", emoji: "🇯🇵" },
+  { code: "NP", dial: "+977", name: "Nepal", emoji: "🇳🇵" },
 ];
 
 // ─── Shared: StepHeader ───────────────────────────────────────────────────────
@@ -108,7 +112,7 @@ function StepHeader({
           {String(total).padStart(2, "0")}
         </Text>
 
-        <FRMark size={18} color={theme.text} />
+        <FRLogo textColor={theme.text} accentColor={theme.accent} variant="mark" size={22} />
       </View>
 
       {/* Progress dashes */}
@@ -444,7 +448,17 @@ function PhoneStep({
         sub="We'll text you a 6-digit code. No password to remember."
       />
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 32 }}>
+      {/* Logo lockup — only shown on step 1 as brand moment */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4 }}>
+        <FRLogo
+          textColor={theme.text}
+          accentColor={theme.accent}
+          variant="lockup"
+          size={34}
+        />
+      </View>
+
+      <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
         <Text
           style={{
             fontFamily: "JetBrainsMono_400Regular",
@@ -628,7 +642,7 @@ function OTPStep({
         topInset={topInset}
         onBack={onBack}
         title={"Enter the\n6-digit code."}
-        sub={`Sent to ${country.dial} ${phone} · Expires in 10 min`}
+        sub={`Sent to ${country.dial} ${phone} · Expires in 5 min`}
       />
 
       <TouchableOpacity
@@ -766,6 +780,16 @@ function OTPStep({
 
 const NAME_SUGGESTIONS = ["AKB", "BRA-12", "verde47", "samba.gold"];
 
+const NAME_ADJECTIVES = ["Fierce", "Wild", "Bold", "Epic", "Iron", "Flash", "Ultra", "Elite", "Power", "Turbo"];
+const NAME_NOUNS = ["Fan", "Roar", "Goal", "Wave", "Chant", "Rush", "Surge", "Blast", "Force", "Spark"];
+
+function generateDisplayName(): string {
+  const adj = NAME_ADJECTIVES[Math.floor(Math.random() * NAME_ADJECTIVES.length)];
+  const noun = NAME_NOUNS[Math.floor(Math.random() * NAME_NOUNS.length)];
+  const num = Math.floor(Math.random() * 900) + 100;
+  return `${adj}${noun}${num}`;
+}
+
 interface DisplayNameStepProps {
   theme: Theme;
   topInset: number;
@@ -773,6 +797,8 @@ interface DisplayNameStepProps {
   setDisplayName: (v: string) => void;
   onNext: () => void;
   onBack: () => void;
+  loading?: boolean;
+  error?: string;
 }
 
 function DisplayNameStep({
@@ -782,6 +808,8 @@ function DisplayNameStep({
   setDisplayName,
   onNext,
   onBack,
+  loading,
+  error,
 }: DisplayNameStepProps) {
   const valid =
     displayName.trim().length >= 2 && displayName.trim().length <= 16;
@@ -1042,6 +1070,8 @@ function DisplayNameStep({
         label="Continue"
         onPress={onNext}
         disabled={!valid}
+        loading={loading}
+        error={error}
       />
     </View>
   );
@@ -1230,6 +1260,27 @@ function RoleStep({
   );
 }
 
+// ─── Firebase error → user-friendly message ───────────────────────────────────
+
+const FIREBASE_ERRORS: Record<string, string> = {
+  "auth/invalid-phone-number":    "That doesn't look like a valid phone number.",
+  "auth/too-many-requests":       "Too many attempts. Please wait a moment and try again.",
+  "auth/quota-exceeded":          "SMS limit reached. Please try again in a few minutes.",
+  "auth/captcha-check-failed":    "Verification failed. Please try again.",
+  "auth/network-request-failed":  "No internet connection. Check your network and retry.",
+  "auth/invalid-verification-code": "Incorrect code. Double-check and try again.",
+  "auth/code-expired":            "Code expired. Tap 'Resend code' to get a new one.",
+  "auth/session-expired":         "Session expired. Tap 'Resend code' to start over.",
+  "auth/billing-not-enabled":     "SMS service is not available right now.",
+  "auth/missing-phone-number":    "Please enter your phone number.",
+  "auth/user-disabled":           "This account has been disabled.",
+};
+
+function firebaseErrorMessage(err: any): string {
+  const code: string = err?.code ?? "";
+  return FIREBASE_ERRORS[code] ?? "Something went wrong. Please try again.";
+}
+
 // ─── Main: OnboardingScreen ───────────────────────────────────────────────────
 
 const FAN_ROLE_API: Record<FanRole, string> = {
@@ -1252,6 +1303,9 @@ export default function OnboardingScreen(_props: Props) {
   const theme = buildTheme(isDark, teamCode);
   const insets = useSafeAreaInsets();
 
+  const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
+  const [verificationId, setVerificationId] = useState<string | null>(null);
+
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [phone, setPhoneLocal] = useState("");
@@ -1268,11 +1322,14 @@ export default function OnboardingScreen(_props: Props) {
     setLoading(true);
     setError("");
     try {
-      await api.auth.requestOtp(fullPhone);
+      const auth = getAuth(firebaseApp);
+      const e164Phone = `${country.dial}${phone.replace(/\D/g, "")}`;
+      const confirmation = await signInWithPhoneNumber(auth, e164Phone, recaptchaRef.current!);
+      setVerificationId(confirmation.verificationId);
       setOtp("");
       setStep(2);
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Failed to send code. Try again.");
+      setError(firebaseErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -1282,11 +1339,11 @@ export default function OnboardingScreen(_props: Props) {
     setLoading(true);
     setError("");
     try {
-      const { data: authData } = await api.auth.verifyOtp(
-        fullPhone,
-        otp,
-        country.code,
-      );
+      const auth = getAuth(firebaseApp);
+      const credential = PhoneAuthProvider.credential(verificationId!, otp);
+      const result = await signInWithCredential(auth, credential);
+      const idToken = await result.user.getIdToken();
+      const { data: authData } = await api.auth.firebaseVerify(idToken, country.code);
       setToken(authData.accessToken);
       const { data: me } = await api.auth.me();
       setUser({
@@ -1303,14 +1360,15 @@ export default function OnboardingScreen(_props: Props) {
         cityCode: me.cityCode ?? "",
       });
       if (me.fanRole && me.fanRole !== "CASUAL") {
-        setDisplayNameLocal(me.displayName);
+        setDisplayNameLocal(me.displayName ?? "");
         setOnboarded();
         // navigator auto-switches to Main when isAuthenticated becomes true
       } else {
+        setDisplayNameLocal(me.displayName || generateDisplayName());
         setStep(3);
       }
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Invalid code. Please try again.");
+      setError(e.code ? firebaseErrorMessage(e) : (e.response?.data?.message ?? "Invalid code. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -1349,6 +1407,27 @@ export default function OnboardingScreen(_props: Props) {
   const goToStep = (s: 1 | 2 | 3 | 4) => {
     setError("");
     setStep(s);
+  };
+
+  const handleCheckAndContinue = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data } = await api.auth.checkDisplayName(displayNameLocal);
+      if (!data.available) {
+        setError("That display name is already taken. Please choose another.");
+        return;
+      }
+      goToStep(4);
+    } catch (e: any) {
+      if (e.response?.status === 409) {
+        setError("That display name is already taken. Please choose another.");
+      } else {
+        goToStep(4);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -1390,8 +1469,10 @@ export default function OnboardingScreen(_props: Props) {
           topInset={insets.top}
           displayName={displayNameLocal}
           setDisplayName={setDisplayNameLocal}
-          onNext={() => goToStep(4)}
+          onNext={handleCheckAndContinue}
           onBack={() => goToStep(2)}
+          loading={loading}
+          error={error}
         />
       )}
       {step === 4 && (
@@ -1415,6 +1496,11 @@ export default function OnboardingScreen(_props: Props) {
           onClose={() => setShowPicker(false)}
         />
       )}
+
+      <FirebaseRecaptchaVerifierModal
+        ref={recaptchaRef}
+        firebaseConfig={firebaseApp.options}
+      />
     </KeyboardAvoidingView>
   );
 }
