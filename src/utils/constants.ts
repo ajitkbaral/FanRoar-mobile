@@ -11,6 +11,10 @@ export const VOICE = {
   SAMPLE_INTERVAL_MS: 100,
 } as const;
 
+export const SOCKET = {
+  HEARTBEAT_INTERVAL_MS: 15_000,
+} as const;
+
 export const ENERGY = {
   BATCH_WINDOW_MS: 500,
   MAX_BATCH_SIZE: 60,

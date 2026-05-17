@@ -4,6 +4,7 @@ import { getSocket } from "../api/socket";
 import { mapMatchStatus, XpUpdatePayload, BadgeAwardedPayload, ApiBadge } from "../api/types";
 import { useMatchStore } from "../store/matchStore";
 import { useUserStore } from "../store/userStore";
+import { SOCKET } from "../utils/constants";
 
 const LOG = (...args: unknown[]) => console.log("[Socket]", ...args);
 
@@ -15,6 +16,7 @@ export function useMatchSocket(
   const socketRef = useRef(getSocket());
   const reconnectAttempts = useRef(0);
   const boostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { setMomentum, setScores, setEventMode, addMatchEvent, setMatchStatus } =
     useMatchStore();
   const { userId, user, fanRole } = useUserStore();
@@ -26,6 +28,24 @@ export function useMatchSocket(
     : fanRole === 'drummer' ? 'DRUMMER'
     : fanRole === 'chanter' ? 'CHANTER'
     : 'CASUAL';
+
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+  }, []);
+
+  const startHeartbeat = useCallback(() => {
+    stopHeartbeat();
+    if (!matchId) return;
+    heartbeatRef.current = setInterval(() => {
+      const socket = socketRef.current;
+      if (socket.connected) {
+        socket.emit("heartbeat", { matchId });
+      }
+    }, SOCKET.HEARTBEAT_INTERVAL_MS);
+  }, [matchId, stopHeartbeat]);
 
   const joinRoom = useCallback(() => {
     if (!matchId) {
@@ -61,6 +81,7 @@ export function useMatchSocket(
       LOG("connected — socket.id:", socket.id);
       reconnectAttempts.current = 0;
       joinRoomRef.current();
+      startHeartbeat();
     });
 
     socket.on(
@@ -120,6 +141,7 @@ export function useMatchSocket(
 
     socket.on("disconnect", (reason) => {
       LOG("disconnected — reason:", reason);
+      stopHeartbeat();
       const delay = Math.min(
         30000,
         1000 * Math.pow(2, reconnectAttempts.current),
@@ -138,14 +160,20 @@ export function useMatchSocket(
 
     const handleAppState = (state: AppStateStatus) => {
       LOG("AppState changed to:", state);
-      if (state === "active") joinRoomRef.current();
-      else leaveRoom();
+      if (state === "active") {
+        joinRoomRef.current();
+        startHeartbeat();
+      } else {
+        stopHeartbeat();
+        leaveRoom();
+      }
     };
     const sub = AppState.addEventListener("change", handleAppState);
 
     return () => {
       LOG("cleanup — leaving room, matchId:", matchId, "teamId:", teamId);
       if (boostTimerRef.current) clearTimeout(boostTimerRef.current);
+      stopHeartbeat();
       leaveRoom();
       socket.off("connect");
       socket.off("score_update");
@@ -158,7 +186,7 @@ export function useMatchSocket(
       socket.off("connect_error");
       sub.remove();
     };
-  }, [matchId, teamId, resolvedUserId, backendFanRole]);
+  }, [matchId, teamId, resolvedUserId, backendFanRole, startHeartbeat, stopHeartbeat]);
 
   const emitEnergy = useCallback(
     (amount: number, inputType: string) => {
