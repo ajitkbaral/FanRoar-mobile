@@ -17,15 +17,16 @@ export function useVoiceLevel({ onVoiceHit, enabled = false }: Options) {
     try {
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      const { recording } = await Audio.Recording.createAsync({
+        ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+        isMeteringEnabled: true,
+      });
       recordingRef.current = recording;
 
       pollRef.current = setInterval(async () => {
         const status = await recording.getStatusAsync();
         if (status.isRecording) {
-          const db = status.meeteringEnabled ? (status as any).meteringLevels?.average ?? -160 : -160;
+          const db = status.metering ?? -160;
           const normalized = Math.max(0, (db + 160) / 160 * 100);
           setLevel(normalized);
           // >65dB approximates to ~normalized > 60

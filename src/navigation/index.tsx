@@ -120,12 +120,6 @@ export default function AppNavigator() {
           border: theme.border,
           notification: theme.danger,
         },
-        fonts: {
-          regular: { fontFamily: 'InterTight_400Regular', fontWeight: '400' },
-          medium:  { fontFamily: 'InterTight_500Medium',  fontWeight: '500' },
-          bold:    { fontFamily: 'InterTight_700Bold',    fontWeight: '700' },
-          heavy:   { fontFamily: 'InterTight_800ExtraBold', fontWeight: '800' },
-        },
       }}
     >
       <Stack.Navigator screenOptions={{ headerShown: false }}>

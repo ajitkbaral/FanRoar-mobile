@@ -106,12 +106,10 @@ export default function ShakeZone({
       }}>
         {/* Radial accent backdrop */}
         <View style={{
-          position: 'absolute',
           ...StyleSheet.absoluteFillObject,
           backgroundColor: 'transparent',
         }}>
           <View style={{
-            position: 'absolute',
             ...StyleSheet.absoluteFillObject,
             borderRadius: 22,
             backgroundColor: theme.accent + '10',
