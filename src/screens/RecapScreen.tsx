@@ -7,12 +7,16 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, cancelAnimation,
 } from 'react-native-reanimated';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
 import { buildTheme } from '../theme';
 import { useUserStore } from '../store/userStore';
 import { api } from '../api/client';
 import { type ApiRecap } from '../api/types';
 import type { RootStackParamList } from '../navigation';
 import MomentCard from '../components/MomentCard';
+import ShareableRecap from '../components/ShareableRecap';
 import FRIcon from '../components/shared/FRIcon';
 import FRCard from '../components/shared/FRCard';
 
@@ -30,6 +34,8 @@ export default function RecapScreen() {
   const [fetchVersion, setFetchVersion] = useState(0);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Off-screen, fixed-width copy of the recap used as the image-capture target.
+  const shareRef = useRef<View>(null);
 
   const skeletonOpacity = useSharedValue(1);
   const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
@@ -122,11 +128,28 @@ export default function RecapScreen() {
 
   const handleShare = async () => {
     if (!recap) return;
+    const caption = `I drove ${recap.impactPercent.toFixed(1)}% of ${supportingTeamName}'s energy in the WC ${recap.match.stage}! Ranked #${recap.rank}. #FanRoar #${supportingTeamName}`;
     try {
-      await Share.share({
-        message: `I drove ${recap.impactPercent.toFixed(1)}% of ${supportingTeamName}'s energy in the WC ${recap.match.stage}! Ranked #${recap.rank}. #FanRoar #${supportingTeamName}`,
-      });
-    } catch {}
+      // Capture the off-screen recap as a PNG and share it via the native sheet.
+      const uri = await captureRef(shareRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      // Copy the caption so users can paste it alongside the image.
+      await Clipboard.setStringAsync(caption);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share your match recap',
+          UTI: 'public.png',
+        });
+        return;
+      }
+      // Fallback: native sharing unavailable — share the caption text.
+      await Share.share({ message: caption });
+    } catch {
+      // Last-resort fallback if capture fails (and ignore user-cancel).
+      try {
+        await Share.share({ message: caption });
+      } catch {}
+    }
   };
 
   return (
@@ -276,6 +299,11 @@ export default function RecapScreen() {
         {/* Loaded content */}
         {!loading && recap && (recap.energyDelivered > 0 || recap.shakeEvents > 0 || recap.tapCombos > 0) && (
           <>
+            {/* Off-screen capture target for image sharing (never visible). */}
+            <View style={{ position: 'absolute', left: -9999, top: 0 }} pointerEvents="none">
+              <ShareableRecap ref={shareRef} theme={theme} recap={recap} supportingTeamName={supportingTeamName} />
+            </View>
+
             {/* Moment card */}
             <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
               <MomentCard
