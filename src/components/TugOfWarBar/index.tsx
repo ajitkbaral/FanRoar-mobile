@@ -14,7 +14,7 @@ interface Props {
   momentum: number; // 0–100, our team = left
   teamA: TeamInfo;
   teamB: TeamInfo;
-  matchStatus?: "live" | "halftime" | "finished" | "upcoming";
+  matchStatus?: "live" | "halftime" | "extratime" | "penalties" | "finished" | "upcoming";
 }
 
 export default function TugOfWarBar({

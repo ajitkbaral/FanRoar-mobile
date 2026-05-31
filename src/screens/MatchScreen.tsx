@@ -46,6 +46,8 @@ interface Floater {
 
 function matchStatusLabel(status: string, minute?: number, half?: 1 | 2): string {
   if (status === "halftime") return "HALF TIME";
+  if (status === "penalties") return "PENALTIES";
+  if (status === "extratime") return minute != null ? `EXTRA TIME · ${minute}'` : "EXTRA TIME";
   if (status !== "live") return status.toUpperCase();
   const halfNum = half ?? ((minute ?? 0) > 45 ? 2 : 1);
   const halfLabel = halfNum === 2 ? "2ND HALF" : "1ST HALF";
@@ -64,12 +66,15 @@ export default function MatchScreen() {
     match,
     scoreA,
     scoreB,
+    penaltyScoreA,
+    penaltyScoreB,
     momentum,
     eventMode,
     joinedMatchId,
     setMatch,
     setJoinedMatchId,
     setScores,
+    setPenaltyScores,
     setMomentum,
     setEventMode,
     supportingTeamId,
@@ -158,6 +163,8 @@ export default function MatchScreen() {
         });
         setJoinedMatchId(m.matchId);
         setScores(m.scores.teamA, m.scores.teamB);
+        if (m.penaltyScores)
+          setPenaltyScores(m.penaltyScores.teamA, m.penaltyScores.teamB);
         if (m.momentumRatio != null)
           setMomentum(Math.round(m.momentumRatio * 100));
         initUsedPowerups(m.usedPowerups);
@@ -198,7 +205,10 @@ export default function MatchScreen() {
     onBatchReady: socketEmit,
   });
 
-  const interactionAllowed = match?.status === "live";
+  const interactionAllowed =
+    match?.status === "live" ||
+    match?.status === "extratime" ||
+    match?.status === "penalties";
 
   useShakeDetector({
     onShake: () => handleInput("shake"),
@@ -337,9 +347,9 @@ export default function MatchScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {(match?.status === "live" || match?.status === "halftime") && (
-              <FRLiveDot color={theme.danger} />
-            )}
+            {match?.status != null &&
+              match.status !== "upcoming" &&
+              match.status !== "finished" && <FRLiveDot color={theme.danger} />}
             <Text
               style={{
                 fontFamily: "JetBrainsMono_400Regular",
@@ -486,6 +496,23 @@ export default function MatchScreen() {
             active={supportingTeamId === match?.teamB.id}
           />
         </View>
+
+        {/* Penalty shootout tally — shown during/after a shootout */}
+        {(match?.status === "penalties" || penaltyScoreA + penaltyScoreB > 0) && (
+          <Text
+            style={{
+              fontFamily: "JetBrainsMono_400Regular",
+              fontSize: 11,
+              color: theme.textMute,
+              letterSpacing: 1,
+              textAlign: "center",
+              marginTop: -6,
+              marginBottom: 6,
+            }}
+          >
+            {`PENS ${penaltyScoreA}–${penaltyScoreB}`}
+          </Text>
+        )}
 
         {/* Supporting team badge */}
         {supportingTeam && (

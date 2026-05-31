@@ -17,7 +17,7 @@ const DEMO_MATCH: Match = {
   },
 };
 
-type PhaseName = "gentle" | "goal" | "cooldown" | "halftime";
+type PhaseName = "gentle" | "goal" | "cooldown" | "halftime" | "extratime" | "penalties";
 
 interface DemoPhase {
   name: PhaseName;
@@ -25,10 +25,12 @@ interface DemoPhase {
 }
 
 const DEMO_PHASES: DemoPhase[] = [
-  { name: "gentle",   durationMs: 10_000 },
-  { name: "goal",     durationMs: 30_000 },
-  { name: "cooldown", durationMs: 20_000 },
-  { name: "halftime", durationMs: 10_000 },
+  { name: "gentle",    durationMs: 10_000 },
+  { name: "goal",      durationMs: 30_000 },
+  { name: "cooldown",  durationMs: 20_000 },
+  { name: "halftime",  durationMs: 10_000 },
+  { name: "extratime", durationMs: 15_000 },
+  { name: "penalties", durationMs: 10_000 },
 ];
 
 const DEMO_CYCLE_MS = DEMO_PHASES.reduce((acc, p) => acc + p.durationMs, 0);
@@ -37,6 +39,7 @@ export function useDemoMode(enabled: boolean): void {
   const {
     setMatch,
     setScores,
+    setPenaltyScores,
     setMomentum,
     setEventMode,
     setMatchStatus,
@@ -68,6 +71,7 @@ export function useDemoMode(enabled: boolean): void {
         setMatchStatus("live");
         setEventMode("normal");
         setMomentum(55);
+        setPenaltyScores(0, 0);
         return;
       }
 
@@ -110,6 +114,23 @@ export function useDemoMode(enabled: boolean): void {
           if (isNewPhase) {
             setMatchStatus("halftime");
             setEventMode("halftime");
+          }
+          break;
+        }
+        case "extratime": {
+          if (isNewPhase) {
+            setMatchStatus("extratime");
+            setEventMode("normal");
+          }
+          const angle = (phaseElapsed / 15_000) * Math.PI * 4;
+          setMomentum((m) => Math.max(0, Math.min(100, m + Math.sin(angle) * 0.4)));
+          break;
+        }
+        case "penalties": {
+          if (isNewPhase) {
+            setMatchStatus("penalties");
+            setEventMode("normal");
+            setPenaltyScores(4, 3);
           }
           break;
         }

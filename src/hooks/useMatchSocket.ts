@@ -17,7 +17,7 @@ export function useMatchSocket(
   const reconnectAttempts = useRef(0);
   const boostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { setMomentum, setScores, setEventMode, addMatchEvent, setMatchStatus } =
+  const { setMomentum, setScores, setPenaltyScores, setEventMode, addMatchEvent, setMatchStatus } =
     useMatchStore();
   const { userId, user, fanRole } = useUserStore();
 
@@ -90,6 +90,8 @@ export function useMatchSocket(
         status?: string;
         scoreA: number;
         scoreB: number;
+        penaltyScoreA?: number;
+        penaltyScoreB?: number;
         teamAEnergy: number;
         teamBEnergy: number;
         momentumRatio: number;
@@ -97,6 +99,9 @@ export function useMatchSocket(
         LOG("score_update", data);
         setMomentum(Math.round(data.momentumRatio * 100));
         setScores(data.scoreA, data.scoreB);
+        if (data.penaltyScoreA != null && data.penaltyScoreB != null) {
+          setPenaltyScores(data.penaltyScoreA, data.penaltyScoreB);
+        }
         if (data.status) setMatchStatus(mapMatchStatus(data.status));
       },
     );
