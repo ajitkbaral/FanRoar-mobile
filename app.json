@@ -25,7 +25,10 @@
         "backgroundColor": "#13141D"
       },
       "package": "com.varskite.fanroar",
-      "permissions": ["RECORD_AUDIO", "VIBRATE"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,6 +38,14 @@
         "expo-av",
         {
           "microphonePermission": "FanRoar needs mic access to measure your cheer energy."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
       ]
     ],
